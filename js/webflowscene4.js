@@ -73,6 +73,11 @@ const FX_CONFIG = {
 // ─── Renderer ────────────────────────────────────────────────────────────────
 const container = document.querySelector('.hero-bg-3d-animation');
 const heroSection = document.querySelector('.hero-section');
+const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+const preloaderVideo = document.querySelector('.preloader-player');
+const initialLoaderDisplay = loaderElement
+  ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
+  : 'flex';
 
 function getViewportSize() {
   const width = container?.clientWidth || window.innerWidth;
@@ -84,9 +89,45 @@ function getViewportSize() {
   };
 }
 
-function waitForPreloaderToFinish(callback) {
-  const loader = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-  const preloaderVideo = document.querySelector('.preloader-player');
+function setScrollLocked(locked) {
+  const value = locked ? 'hidden' : '';
+  document.documentElement.style.overflow = value;
+  document.body.style.overflow = value;
+}
+
+function keepPreloaderVisible() {
+  if (!loaderElement) return;
+
+  loaderElement.style.display = initialLoaderDisplay;
+  loaderElement.style.opacity = '1';
+  loaderElement.style.visibility = 'visible';
+  loaderElement.style.pointerEvents = 'auto';
+}
+
+function hidePreloader(onComplete) {
+  if (!loaderElement) {
+    onComplete?.();
+    return;
+  }
+
+  gsap.to(loaderElement, {
+    opacity: 0,
+    duration: 0.6,
+    ease: 'power2.out',
+    onStart: () => {
+      loaderElement.style.visibility = 'visible';
+      loaderElement.style.pointerEvents = 'none';
+    },
+    onComplete: () => {
+      loaderElement.style.display = 'none';
+      loaderElement.style.visibility = 'hidden';
+      onComplete?.();
+    }
+  });
+}
+
+function waitForPreloaderVideo(callback) {
+  const loader = loaderElement;
 
   if (!loader) {
     callback();
@@ -141,6 +182,11 @@ function waitForPreloaderToFinish(callback) {
     observer.disconnect();
     finish();
   }, 4500);
+}
+
+if (loaderElement) {
+  setScrollLocked(true);
+  keepPreloaderVisible();
 }
 
 const initialViewport = getViewportSize();
@@ -349,6 +395,7 @@ async function initScene() {
       let lookTarget = null;
       let animatedLookTarget = null;
       let heroTimeline = null;
+      let hasRevealedScene = false;
 
       const resetToStartFrame = () => {
         if (!startPos || !startLookTarget || !animatedLookTarget) return;
@@ -417,6 +464,33 @@ async function initScene() {
         ScrollTrigger.refresh();
       };
 
+      const revealSceneWhenReady = (midPos, endPos) => {
+        if (hasRevealedScene) return;
+        hasRevealedScene = true;
+
+        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+          ScrollTrigger.clearScrollMemory();
+        }
+
+        window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+
+        requestAnimationFrame(() => {
+          buildHeroTimeline(midPos, endPos);
+
+          requestAnimationFrame(() => {
+            hidePreloader(() => {
+              setScrollLocked(false);
+              ScrollTrigger.refresh();
+              if (heroTimeline?.scrollTrigger) {
+                heroTimeline.scrollTrigger.update();
+              }
+            });
+          });
+        });
+      };
+
       const logo = model.getObjectByName('Logo');
       if (logo) {
         const logoPos = new THREE.Vector3();
@@ -444,22 +518,14 @@ async function initScene() {
         
         // Show the room view immediately after the model is ready.
         resetToStartFrame();
+        composer.render();
 
         // Only enable the scroll animation after the preloader is fully done.
-        waitForPreloaderToFinish(() => {
-          if (typeof ScrollTrigger.clearScrollMemory === 'function') {
-            ScrollTrigger.clearScrollMemory();
-          }
-
-          window.scrollTo(0, 0);
-          document.documentElement.scrollTop = 0;
-          document.body.scrollTop = 0;
-
-          requestAnimationFrame(() => buildHeroTimeline(midPos, endPos));
-        });
+        waitForPreloaderVideo(() => revealSceneWhenReady(midPos, endPos));
 
       } else {
         console.warn("Could not find an object named 'Logo' to focus on!");
+        hidePreloader(() => setScrollLocked(false));
       }
 
     },
