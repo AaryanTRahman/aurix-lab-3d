@@ -18,12 +18,12 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 const LIGHTMAP_CONFIG = {
-  'Marble 5': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
-  'Roof': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
-  'Pillar': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
-  'Wall': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
-  'Table Wood': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Table.hdr',
-  'Black Table top': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Table.hdr',
+  'Marble 5': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom.hdr',
+  'Roof': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom.hdr',
+  'Pillar': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom.hdr',
+  'Wall': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom.hdr',
+  'Table Wood': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapTable.hdr',
+  'Black Table top': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapTable.hdr',
 };
 
 // ─── CAMERA SCROLL ANIMATION CONFIG ──────────────────────────────────────────
@@ -186,7 +186,7 @@ async function initScene() {
   const rgbeLoader = new RGBELoader();
 
   // ── LOAD HDRI FOR METALS ──
-  rgbeLoader.load('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/shanghai_bund_1k.hdr', (envMap) => {
+  rgbeLoader.load('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k.hdr', (envMap) => {
     scene.environmentIntensity = 0.05; 
     const SATURATION = 0.5; 
     
@@ -224,7 +224,7 @@ async function initScene() {
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
   gltfLoader.load(
-    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/Test14optimized.glb',
+    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test14optimized.glb',
     (gltf) => {
       const model = gltf.scene;
 
