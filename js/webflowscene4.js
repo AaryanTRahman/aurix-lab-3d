@@ -401,4 +401,9 @@ function animate() {
   composer.render();
 }
 
-animate();
+// ─── Start the Scene ──────────────────────────────────────────────────────────
+// Wait for the entire page to load before initializing Three.js and GSAP
+window.addEventListener('DOMContentLoaded', (event) => {
+  initScene();
+  animate();
+});
