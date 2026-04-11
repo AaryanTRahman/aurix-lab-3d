@@ -91,6 +91,41 @@ function getLoaderElements() {
   ].filter(Boolean);
 }
 
+function whenLoaderIsGone(callback) {
+  const loader = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+
+  if (!loader) {
+    callback();
+    return;
+  }
+
+  const isHidden = () => {
+    const styles = window.getComputedStyle(loader);
+    return (
+      styles.display === 'none' ||
+      styles.visibility === 'hidden' ||
+      Number.parseFloat(styles.opacity) === 0
+    );
+  };
+
+  if (isHidden()) {
+    callback();
+    return;
+  }
+
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(loader) || isHidden()) {
+      observer.disconnect();
+      callback();
+    }
+  });
+
+  observer.observe(loader, {
+    attributes: true,
+    attributeFilter: ['class', 'style']
+  });
+}
+
 const initialViewport = getViewportSize();
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -104,11 +139,6 @@ if (container) {
   container.appendChild(renderer.domElement);
 } else {
   console.error("Could not find '.hero-bg-3d-animation' div in Webflow!");
-}
-
-// Lock scrolling while loading if a loader is present
-if (getLoaderElements().length) {
-  document.body.style.overflow = 'hidden';
 }
 
 // ─── Scene & Lights ──────────────────────────────────────────────────────────
@@ -295,16 +325,19 @@ async function initScene() {
       });
 
       // ─── SETUP GSAP SCROLL ANIMATION ────────────────────────────────────
+      let startPos = null;
+      let lookTarget = null;
+
       const logo = model.getObjectByName('Logo');
       if (logo) {
         const logoPos = new THREE.Vector3();
         logo.getWorldPosition(logoPos);
         
         // Calculate absolute positions
-        const startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
+        startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
         const midPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset);
         const endPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset);
-        const lookTarget = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtOffset);
+        lookTarget = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtOffset);
         
         // Apply Initial Start Values
         camera.position.copy(startPos);
@@ -364,29 +397,18 @@ async function initScene() {
         console.warn("Could not find an object named 'Logo' to focus on!");
       }
       
-      // ─── HIDE LOADING SCREEN SAFELY ─────────────────────────────────
-      // Hide both the native Webflow preloader and the custom embed loader if present
-      const loaders = getLoaderElements();
-
-      if (loaders.length) {
-        gsap.to(loaders, {
-          opacity: 0,
-          duration: 1,
-          ease: "power2.inOut",
-          onComplete: () => {
-            loaders.forEach((loader) => {
-              loader.style.display = 'none';
-            });
-            document.body.style.overflow = ''; // Unlock scrolling
-            requestAnimationFrame(() => ScrollTrigger.refresh());
-          }
-        });
-      } else {
-        // If no loader exists, just unlock scrolling immediately
-        document.body.style.overflow = '';
+      // Wait for Webflow's loader to disappear, then reset the scroll animation cleanly.
+      whenLoaderIsGone(() => {
+        window.scrollTo(0, 0);
+        if (startPos && lookTarget) {
+          camera.position.copy(startPos);
+          camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
+          camera.updateProjectionMatrix();
+          bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
+          camera.lookAt(lookTarget);
+        }
         requestAnimationFrame(() => ScrollTrigger.refresh());
-      }
-      // ────────────────────────────────────────────────────────────────
+      });
 
     },
     (xhr) => {
