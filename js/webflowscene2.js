@@ -332,26 +332,33 @@ async function initScene() {
         console.warn("Could not find an object named 'Logo' to focus on!");
       }
       
-      // AFTER the GSAP timeline is built, hide the loading screen!
-      const loaderWrapper = document.getElementById('custom-loader');
-      if (loaderWrapper) {
-        gsap.to(loaderWrapper, { 
-          opacity: 0, 
-          duration: 1, 
+      // ─── HIDE LOADING SCREEN SAFELY ─────────────────────────────────
+      // This looks for your native Webflow preloader OR the custom embed one
+      const loader = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+      
+      if (loader) {
+        gsap.to(loader, {
+          opacity: 0,
+          duration: 1,
           ease: "power2.inOut",
           onComplete: () => {
-            loaderWrapper.style.display = 'none';
-            // Unlock scrolling so the user can scroll the site!
-            document.body.style.overflow = ''; 
+            loader.style.display = 'none';
+            document.body.style.overflow = ''; // Unlock scrolling
           }
         });
+      } else {
+        // If no loader exists, just unlock scrolling immediately
+        document.body.style.overflow = '';
       }
+      // ────────────────────────────────────────────────────────────────
+
     },
     (xhr) => {
-      // Update the HTML percentage text
-      const percent = (xhr.loaded / xhr.total) * 100;
+      // Safely update progress text if you have an element with id="loader-progress"
       const progressText = document.getElementById('loader-progress');
-      if (progressText) progressText.innerText = `${percent.toFixed(0)}%`;
+      if (progressText) {
+        progressText.innerText = `${((xhr.loaded / xhr.total) * 100).toFixed(0)}%`;
+      }
     },
     (error) => console.error('GLTFLoader error:', error)
   );
