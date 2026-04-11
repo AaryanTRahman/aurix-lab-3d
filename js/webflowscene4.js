@@ -311,7 +311,9 @@ async function initScene() {
 
       const box = new THREE.Box3().setFromObject(model);
       const centre = new THREE.Vector3();
+      const modelSize = new THREE.Vector3();
       box.getCenter(centre);
+      box.getSize(modelSize);
       model.position.sub(centre);
 
       scene.add(model);
@@ -343,17 +345,20 @@ async function initScene() {
 
       // ─── SETUP GSAP SCROLL ANIMATION ────────────────────────────────────
       let startPos = null;
+      let startLookTarget = null;
       let lookTarget = null;
+      let animatedLookTarget = null;
       let heroTimeline = null;
 
       const resetToStartFrame = () => {
-        if (!startPos || !lookTarget) return;
+        if (!startPos || !startLookTarget || !animatedLookTarget) return;
 
+        animatedLookTarget.copy(startLookTarget);
         camera.position.copy(startPos);
         camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
         camera.updateProjectionMatrix();
         bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
-        camera.lookAt(lookTarget);
+        camera.lookAt(animatedLookTarget);
       };
 
       const buildHeroTimeline = (midPos, endPos) => {
@@ -372,7 +377,7 @@ async function initScene() {
             anticipatePin: 1
           },
           onUpdate: () => {
-            if (lookTarget) camera.lookAt(lookTarget);
+            if (animatedLookTarget) camera.lookAt(animatedLookTarget);
           }
         });
 
@@ -395,6 +400,14 @@ async function initScene() {
           onUpdate: () => camera.updateProjectionMatrix()
         }, 0);
 
+        heroTimeline.to(animatedLookTarget, {
+          x: lookTarget.x,
+          y: lookTarget.y,
+          z: lookTarget.z,
+          ease: "power2.inOut",
+          duration: 2
+        }, 0);
+
         heroTimeline.to(bloomPass, {
           strength: CAMERA_SCROLL_CONFIG.bloom.end,
           ease: "power2.inOut",
@@ -409,11 +422,25 @@ async function initScene() {
         const logoPos = new THREE.Vector3();
         logo.getWorldPosition(logoPos);
         
-        // Calculate absolute positions
-        startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
-        const midPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset);
+        // Build a stable room view first, then scroll into the logo.
+        startPos = new THREE.Vector3(
+          modelSize.x * 0.14,
+          modelSize.y * 0.1,
+          modelSize.z * 0.9
+        );
+
+        startLookTarget = new THREE.Vector3(
+          0,
+          modelSize.y * 0.04,
+          0
+        );
+
         const endPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset);
+        const midPos = new THREE.Vector3().lerpVectors(startPos, endPos, 0.6);
+        midPos.y = THREE.MathUtils.lerp(startPos.y, endPos.y, 0.7);
+
         lookTarget = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtOffset);
+        animatedLookTarget = startLookTarget.clone();
         
         // Show the room view immediately after the model is ready.
         resetToStartFrame();
