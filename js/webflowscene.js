@@ -18,12 +18,12 @@ gsap.registerPlugin(ScrollTrigger);
 
 // ─── Configuration ───────────────────────────────────────────────────────────
 const LIGHTMAP_CONFIG = {
-  'Marble 5': './model/LightMap Room 2.hdr',
-  'Roof': './model/LightMap Room 2.hdr',
-  'Pillar': './model/LightMap Room 2.hdr',
-  'Wall': './model/LightMap Room 2.hdr',
-  'Table Wood': './model/LightMap Table.hdr',
-  'Black Table top': './model/LightMap Table.hdr',
+  'Marble 5': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
+  'Roof': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
+  'Pillar': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
+  'Wall': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Room_2.hdr',
+  'Table Wood': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Table.hdr',
+  'Black Table top': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/LightMap_Table.hdr',
 };
 
 // ─── CAMERA SCROLL ANIMATION CONFIG ──────────────────────────────────────────
@@ -186,7 +186,7 @@ async function initScene() {
   const rgbeLoader = new RGBELoader();
 
   // ── LOAD HDRI FOR METALS ──
-  rgbeLoader.load('./model/shanghai_bund_1k.hdr', (envMap) => {
+  rgbeLoader.load('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/shanghai_bund_1k.hdr', (envMap) => {
     scene.environmentIntensity = 0.05; 
     const SATURATION = 0.5; 
     
@@ -224,7 +224,7 @@ async function initScene() {
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
   gltfLoader.load(
-    './model/Test14optimized.glb',
+    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/model/Test14optimized.glb',
     (gltf) => {
       const model = gltf.scene;
 
