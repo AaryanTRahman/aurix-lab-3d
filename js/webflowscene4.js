@@ -84,15 +84,9 @@ function getViewportSize() {
   };
 }
 
-function getLoaderElements() {
-  return [
-    document.querySelector('.preloader-wrapper'),
-    document.getElementById('custom-loader')
-  ].filter(Boolean);
-}
-
-function whenLoaderIsGone(callback) {
+function waitForPreloaderToFinish(callback) {
   const loader = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+  const preloaderVideo = document.querySelector('.preloader-player');
 
   if (!loader) {
     callback();
@@ -104,12 +98,6 @@ function whenLoaderIsGone(callback) {
   const finish = () => {
     if (didFinish) return;
     didFinish = true;
-
-    loader.style.opacity = '0';
-    loader.style.visibility = 'hidden';
-    loader.style.pointerEvents = 'none';
-    loader.style.display = 'none';
-
     callback();
   };
 
@@ -125,6 +113,16 @@ function whenLoaderIsGone(callback) {
   if (isHidden()) {
     finish();
     return;
+  }
+
+  if (preloaderVideo) {
+    if (preloaderVideo.ended) {
+      finish();
+      return;
+    }
+
+    preloaderVideo.addEventListener('ended', finish, { once: true });
+    preloaderVideo.addEventListener('error', finish, { once: true });
   }
 
   const observer = new MutationObserver(() => {
@@ -348,6 +346,64 @@ async function initScene() {
       let lookTarget = null;
       let heroTimeline = null;
 
+      const resetToStartFrame = () => {
+        if (!startPos || !lookTarget) return;
+
+        camera.position.copy(startPos);
+        camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
+        camera.updateProjectionMatrix();
+        bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
+        camera.lookAt(lookTarget);
+      };
+
+      const buildHeroTimeline = (midPos, endPos) => {
+        heroTimeline?.kill();
+
+        resetToStartFrame();
+
+        heroTimeline = gsap.timeline({
+          scrollTrigger: {
+            trigger: heroSection || ".hero-section",
+            start: "top top",
+            end: CAMERA_SCROLL_CONFIG.scrollDistance,
+            scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
+            pin: true,
+            invalidateOnRefresh: true,
+            anticipatePin: 1
+          },
+          onUpdate: () => {
+            if (lookTarget) camera.lookAt(lookTarget);
+          }
+        });
+
+        heroTimeline.to(camera.position, {
+          x: midPos.x, y: midPos.y, z: midPos.z,
+          ease: "power1.in",
+          duration: 1
+        }, 0);
+
+        heroTimeline.to(camera.position, {
+          x: endPos.x, y: endPos.y, z: endPos.z,
+          ease: "power1.out",
+          duration: 1
+        }, 1);
+
+        heroTimeline.to(camera, {
+          fov: CAMERA_SCROLL_CONFIG.fov.end,
+          ease: "power2.inOut",
+          duration: 2,
+          onUpdate: () => camera.updateProjectionMatrix()
+        }, 0);
+
+        heroTimeline.to(bloomPass, {
+          strength: CAMERA_SCROLL_CONFIG.bloom.end,
+          ease: "power2.inOut",
+          duration: 2
+        }, 0);
+
+        ScrollTrigger.refresh();
+      };
+
       const logo = model.getObjectByName('Logo');
       if (logo) {
         const logoPos = new THREE.Vector3();
@@ -359,95 +415,25 @@ async function initScene() {
         const endPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset);
         lookTarget = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtOffset);
         
-        // Apply Initial Start Values
-        camera.position.copy(startPos);
-        camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
-        camera.updateProjectionMatrix();
-        camera.lookAt(lookTarget);
+        // Show the room view immediately after the model is ready.
+        resetToStartFrame();
 
-        // Note: Because Javascript is asynchronous, the bloomPass defined at the 
-        // bottom of your file is fully accessible here!
-        bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
+        // Only enable the scroll animation after the preloader is fully done.
+        waitForPreloaderToFinish(() => {
+          if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+            ScrollTrigger.clearScrollMemory();
+          }
 
-        // Build the ScrollTrigger Timeline
-        heroTimeline = gsap.timeline({
-          scrollTrigger: {
-            // CRITICAL: Target the parent section in Webflow!
-            trigger: heroSection || ".hero-section", 
-            start: "top top",             
-            end: CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness, 
-            pin: true,
-            invalidateOnRefresh: true,
-            anticipatePin: 1
-          },
-          onUpdate: () => camera.lookAt(lookTarget)
+          window.scrollTo(0, 0);
+          document.documentElement.scrollTop = 0;
+          document.body.scrollTop = 0;
+
+          requestAnimationFrame(() => buildHeroTimeline(midPos, endPos));
         });
-
-        // 1. Camera Position: Start -> Mid (0% to 50%)
-        // We use duration: 1 and ease: "none" so it flows smoothly into the next point
-        heroTimeline.to(camera.position, {
-          x: midPos.x, y: midPos.y, z: midPos.z,
-          ease: "power1.in", // Smooth acceleration away from start
-          duration: 1
-        }, 0); // The '0' means start exactly at the beginning of the timeline
-
-        // 2. Camera Position: Mid -> End (50% to 100%)
-        heroTimeline.to(camera.position, {
-          x: endPos.x, y: endPos.y, z: endPos.z,
-          ease: "power1.out", // Smooth deceleration into the end
-          duration: 1
-        }, 1); // The '1' means start after the previous 1-duration tween finishes (exactly 50%)
-
-        // 3. Camera FOV: Start -> End (0% to 100%)
-        // We set duration to 2 so it stretches across the ENTIRE animation
-        heroTimeline.to(camera, {
-          fov: CAMERA_SCROLL_CONFIG.fov.end,
-          ease: "power2.inOut",
-          duration: 2,
-          onUpdate: () => camera.updateProjectionMatrix() // Must be called when FOV changes
-        }, 0); // Start at the beginning
-
-        // 4. Bloom Strength: Start -> End (0% to 100%)
-        heroTimeline.to(bloomPass, {
-          strength: CAMERA_SCROLL_CONFIG.bloom.end,
-          ease: "power2.inOut",
-          duration: 2
-        }, 0); // Start at the beginning
 
       } else {
         console.warn("Could not find an object named 'Logo' to focus on!");
       }
-      
-      // Wait for Webflow's loader to disappear, then reset the scroll animation cleanly.
-      whenLoaderIsGone(() => {
-        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
-          ScrollTrigger.clearScrollMemory();
-        }
-
-        window.scrollTo(0, 0);
-
-        requestAnimationFrame(() => {
-          if (heroTimeline) {
-            heroTimeline.progress(0);
-          }
-
-          if (startPos && lookTarget) {
-            camera.position.copy(startPos);
-            camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
-            camera.updateProjectionMatrix();
-            bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
-            camera.lookAt(lookTarget);
-          }
-
-          requestAnimationFrame(() => {
-            ScrollTrigger.refresh();
-            if (heroTimeline?.scrollTrigger) {
-              heroTimeline.scrollTrigger.update();
-            }
-          });
-        });
-      });
 
     },
     (xhr) => {
