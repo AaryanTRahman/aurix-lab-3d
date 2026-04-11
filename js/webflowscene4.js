@@ -99,6 +99,20 @@ function whenLoaderIsGone(callback) {
     return;
   }
 
+  let didFinish = false;
+
+  const finish = () => {
+    if (didFinish) return;
+    didFinish = true;
+
+    loader.style.opacity = '0';
+    loader.style.visibility = 'hidden';
+    loader.style.pointerEvents = 'none';
+    loader.style.display = 'none';
+
+    callback();
+  };
+
   const isHidden = () => {
     const styles = window.getComputedStyle(loader);
     return (
@@ -109,14 +123,14 @@ function whenLoaderIsGone(callback) {
   };
 
   if (isHidden()) {
-    callback();
+    finish();
     return;
   }
 
   const observer = new MutationObserver(() => {
     if (!document.body.contains(loader) || isHidden()) {
       observer.disconnect();
-      callback();
+      finish();
     }
   });
 
@@ -124,6 +138,11 @@ function whenLoaderIsGone(callback) {
     attributes: true,
     attributeFilter: ['class', 'style']
   });
+
+  window.setTimeout(() => {
+    observer.disconnect();
+    finish();
+  }, 4500);
 }
 
 const initialViewport = getViewportSize();
@@ -327,6 +346,7 @@ async function initScene() {
       // ─── SETUP GSAP SCROLL ANIMATION ────────────────────────────────────
       let startPos = null;
       let lookTarget = null;
+      let heroTimeline = null;
 
       const logo = model.getObjectByName('Logo');
       if (logo) {
@@ -350,28 +370,30 @@ async function initScene() {
         bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
 
         // Build the ScrollTrigger Timeline
-        const tl = gsap.timeline({
+        heroTimeline = gsap.timeline({
           scrollTrigger: {
             // CRITICAL: Target the parent section in Webflow!
             trigger: heroSection || ".hero-section", 
             start: "top top",             
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness, 
-            pin: true,                    
+            pin: true,
+            invalidateOnRefresh: true,
+            anticipatePin: 1
           },
           onUpdate: () => camera.lookAt(lookTarget)
         });
 
         // 1. Camera Position: Start -> Mid (0% to 50%)
         // We use duration: 1 and ease: "none" so it flows smoothly into the next point
-        tl.to(camera.position, {
+        heroTimeline.to(camera.position, {
           x: midPos.x, y: midPos.y, z: midPos.z,
           ease: "power1.in", // Smooth acceleration away from start
           duration: 1
         }, 0); // The '0' means start exactly at the beginning of the timeline
 
         // 2. Camera Position: Mid -> End (50% to 100%)
-        tl.to(camera.position, {
+        heroTimeline.to(camera.position, {
           x: endPos.x, y: endPos.y, z: endPos.z,
           ease: "power1.out", // Smooth deceleration into the end
           duration: 1
@@ -379,7 +401,7 @@ async function initScene() {
 
         // 3. Camera FOV: Start -> End (0% to 100%)
         // We set duration to 2 so it stretches across the ENTIRE animation
-        tl.to(camera, {
+        heroTimeline.to(camera, {
           fov: CAMERA_SCROLL_CONFIG.fov.end,
           ease: "power2.inOut",
           duration: 2,
@@ -387,7 +409,7 @@ async function initScene() {
         }, 0); // Start at the beginning
 
         // 4. Bloom Strength: Start -> End (0% to 100%)
-        tl.to(bloomPass, {
+        heroTimeline.to(bloomPass, {
           strength: CAMERA_SCROLL_CONFIG.bloom.end,
           ease: "power2.inOut",
           duration: 2
@@ -399,15 +421,32 @@ async function initScene() {
       
       // Wait for Webflow's loader to disappear, then reset the scroll animation cleanly.
       whenLoaderIsGone(() => {
-        window.scrollTo(0, 0);
-        if (startPos && lookTarget) {
-          camera.position.copy(startPos);
-          camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
-          camera.updateProjectionMatrix();
-          bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
-          camera.lookAt(lookTarget);
+        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+          ScrollTrigger.clearScrollMemory();
         }
-        requestAnimationFrame(() => ScrollTrigger.refresh());
+
+        window.scrollTo(0, 0);
+
+        requestAnimationFrame(() => {
+          if (heroTimeline) {
+            heroTimeline.progress(0);
+          }
+
+          if (startPos && lookTarget) {
+            camera.position.copy(startPos);
+            camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
+            camera.updateProjectionMatrix();
+            bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
+            camera.lookAt(lookTarget);
+          }
+
+          requestAnimationFrame(() => {
+            ScrollTrigger.refresh();
+            if (heroTimeline?.scrollTrigger) {
+              heroTimeline.scrollTrigger.update();
+            }
+          });
+        });
       });
 
     },
