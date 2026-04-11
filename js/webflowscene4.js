@@ -71,23 +71,45 @@ const FX_CONFIG = {
 };
 
 // ─── Renderer ────────────────────────────────────────────────────────────────
+const container = document.querySelector('.hero-bg-3d-animation');
+const heroSection = document.querySelector('.hero-section');
+
+function getViewportSize() {
+  const width = container?.clientWidth || window.innerWidth;
+  const height = container?.clientHeight || window.innerHeight;
+
+  return {
+    width: Math.max(width, 1),
+    height: Math.max(height, 1)
+  };
+}
+
+function getLoaderElements() {
+  return [
+    document.querySelector('.preloader-wrapper'),
+    document.getElementById('custom-loader')
+  ].filter(Boolean);
+}
+
+const initialViewport = getViewportSize();
 const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setSize(initialViewport.width, initialViewport.height, false);
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 // Target the Webflow class you created
-const container = document.querySelector('.hero-bg-3d-animation');
 if (container) {
   container.appendChild(renderer.domElement);
 } else {
   console.error("Could not find '.hero-bg-3d-animation' div in Webflow!");
 }
 
-// Lock scrolling while loading
-document.body.style.overflow = 'hidden';
+// Lock scrolling while loading if a loader is present
+if (getLoaderElements().length) {
+  document.body.style.overflow = 'hidden';
+}
 
 // ─── Scene & Lights ──────────────────────────────────────────────────────────
 const scene = new THREE.Scene();
@@ -99,20 +121,28 @@ scene.add(ambientLight);
 // ─── Camera ──────────────────────────────────────────────────────────────────
 const camera = new THREE.PerspectiveCamera(
   50,
-  window.innerWidth / window.innerHeight,
+  initialViewport.width / initialViewport.height,
   0.01,
   2000
 );
 
 // ─── Resize Handler ──────────────────────────────────────────────────────────
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
+function resizeScene() {
+  const { width, height } = getViewportSize();
+
+  camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-  composer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setSize(width, height, false);
+
+  if (composer) {
+    composer.setSize(width, height);
+  }
+
   // Optional: ScrollTrigger.refresh() helps recalculate pinned containers on resize
   ScrollTrigger.refresh();
-});
+}
+
+window.addEventListener('resize', resizeScene);
 
 // ─── Process Scene Function ──────────────────────────────────────────────────
 function processScene(gltf, loadedLightmaps) {
@@ -183,6 +213,8 @@ function processScene(gltf, loadedLightmaps) {
 
 // ─── Main Execution ──────────────────────────────────────────────────────────
 async function initScene() {
+  if (!container) return;
+
   const rgbeLoader = new RGBELoader();
 
   // ── LOAD HDRI FOR METALS ──
@@ -288,7 +320,7 @@ async function initScene() {
         const tl = gsap.timeline({
           scrollTrigger: {
             // CRITICAL: Target the parent section in Webflow!
-            trigger: ".hero-section", 
+            trigger: heroSection || ".hero-section", 
             start: "top top",             
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness, 
@@ -333,22 +365,26 @@ async function initScene() {
       }
       
       // ─── HIDE LOADING SCREEN SAFELY ─────────────────────────────────
-      // This looks for your native Webflow preloader OR the custom embed one
-      const loader = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-      
-      if (loader) {
-        gsap.to(loader, {
+      // Hide both the native Webflow preloader and the custom embed loader if present
+      const loaders = getLoaderElements();
+
+      if (loaders.length) {
+        gsap.to(loaders, {
           opacity: 0,
           duration: 1,
           ease: "power2.inOut",
           onComplete: () => {
-            loader.style.display = 'none';
+            loaders.forEach((loader) => {
+              loader.style.display = 'none';
+            });
             document.body.style.overflow = ''; // Unlock scrolling
+            requestAnimationFrame(() => ScrollTrigger.refresh());
           }
         });
       } else {
         // If no loader exists, just unlock scrolling immediately
         document.body.style.overflow = '';
+        requestAnimationFrame(() => ScrollTrigger.refresh());
       }
       // ────────────────────────────────────────────────────────────────
 
@@ -365,7 +401,7 @@ async function initScene() {
 }
 
 // ─── Post-Processing (EffectComposer) ────────────────────────────────────────
-const renderTarget = new THREE.WebGLRenderTarget(window.innerWidth, window.innerHeight, {
+const renderTarget = new THREE.WebGLRenderTarget(initialViewport.width, initialViewport.height, {
   samples: FX_CONFIG.msaaSamples,
   type: THREE.HalfFloatType
 });
@@ -374,7 +410,7 @@ const composer = new EffectComposer(renderer, renderTarget);
 composer.addPass(new RenderPass(scene, camera));
 
 const bloomPass = new UnrealBloomPass(
-  new THREE.Vector2(window.innerWidth, window.innerHeight),
+  new THREE.Vector2(initialViewport.width, initialViewport.height),
   FX_CONFIG.bloomStrength,
   FX_CONFIG.bloomRadius,
   FX_CONFIG.bloomThreshold
@@ -386,9 +422,6 @@ vignettePass.uniforms['offset'].value = FX_CONFIG.vignetteOffset;
 vignettePass.uniforms['darkness'].value = FX_CONFIG.vignetteDarkness;
 composer.addPass(vignettePass);
 composer.addPass(new OutputPass());
-
-// Kickstart
-initScene();
 
 // ─── Animation Loop ──────────────────────────────────────────────────────────
 function animate() {
@@ -402,8 +435,21 @@ function animate() {
 }
 
 // ─── Start the Scene ──────────────────────────────────────────────────────────
-// Wait for the entire page to load before initializing Three.js and GSAP
-window.addEventListener('DOMContentLoaded', (event) => {
-  initScene();
+let hasStarted = false;
+
+async function startScene() {
+  if (hasStarted) return;
+  hasStarted = true;
+
+  if (!container) return;
+
+  await initScene();
+  resizeScene();
   animate();
-});
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', startScene, { once: true });
+} else {
+  startScene();
+}
