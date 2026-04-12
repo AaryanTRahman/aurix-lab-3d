@@ -30,9 +30,9 @@ const LIGHTMAP_CONFIG = {
 const CAMERA_SCROLL_CONFIG = {
   // Coordinates are relative to the "Logo" object.
   // Start: Far back and slightly high
-  startOffset: new THREE.Vector3(-1, -1, 10), 
+  startOffset: new THREE.Vector3(-0.3, -0.9, 10), 
 
-  midOffset: new THREE.Vector3(0, -0.5, 5),
+  midOffset: new THREE.Vector3(0, -0.5, 6),
 
   // End: Close up to the logo
   endOffset: new THREE.Vector3(0, 0, 4),    
@@ -40,7 +40,7 @@ const CAMERA_SCROLL_CONFIG = {
   lookAtOffset: new THREE.Vector3(0, 0, 0), 
 
   // Camera Field of View (Zoom effect)
-  fov: { start: 50, end: 26 },
+  fov: { start: 56, end: 26 },
 
   // Bloom Glow Strength
   bloom: { start: 0.1, end: 0.04 },
@@ -349,7 +349,7 @@ async function initScene() {
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
   gltfLoader.load(
-    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test14optimized.glb',
+    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test15optimized.glb',
     (gltf) => {
       const model = gltf.scene;
 
