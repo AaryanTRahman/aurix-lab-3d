@@ -496,25 +496,18 @@ async function initScene() {
         const logoPos = new THREE.Vector3();
         logo.getWorldPosition(logoPos);
         
-        // Build a stable room view first, then scroll into the logo.
-        startPos = new THREE.Vector3(
-          modelSize.x * 0.14,
-          modelSize.y * 0.1,
-          modelSize.z * 0.9
-        );
-
-        startLookTarget = new THREE.Vector3(
-          0,
-          modelSize.y * 0.04,
-          0
-        );
-
+        // ─── RESTORED: USE THE CONFIG VALUES ────────────────────────────────
+        startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
+        const midPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset);
         const endPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset);
-        const midPos = new THREE.Vector3().lerpVectors(startPos, endPos, 0.6);
-        midPos.y = THREE.MathUtils.lerp(startPos.y, endPos.y, 0.7);
-
+        
         lookTarget = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtOffset);
+        
+        // This forces the camera to stare at the logo from the very beginning 
+        // instead of looking at the center of the room.
+        startLookTarget = lookTarget.clone();
         animatedLookTarget = startLookTarget.clone();
+        // ────────────────────────────────────────────────────────────────────
         
         // Show the room view immediately after the model is ready.
         resetToStartFrame();
