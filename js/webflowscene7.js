@@ -47,7 +47,7 @@ const CAMERA_SCROLL_CONFIG = {
   
   // How many pixels the user has to scroll to complete the animation
   // (e.g., "+=3000" means 3000px of scrolling before the site moves down)
-  scrollDistance: "+=3000",
+  scrollDistance: "+=1300",
   
   // Smoothness (higher = more floaty lag when scrolling stops)
   scrubSmoothness: 1.5 
