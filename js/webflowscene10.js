@@ -423,89 +423,86 @@ async function initScene() {
         camera.lookAt(animatedLookTarget);
       };
 
-const buildHeroTimeline = () => {
-        heroTimeline?.kill();
+const buildHeroTimeline = (logoPos) => {
+  heroTimeline?.kill();
 
-        // 1. Reset Camera and Fov
-        resetToStartFrame();
+  // 1. Reset Camera and Fov
+  resetToStartFrame();
 
-        // 2. Build the Timeline
-        heroTimeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: heroSection || ".hero-section",
-            start: "top top",
-            end: CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin: true,
-            anticipatePin: 1,
-            invalidateOnRefresh: true
-          },
-          onUpdate: () => {
-             // Constantly update FOV and Camera LookAt during scroll
-             camera.updateProjectionMatrix();
-             if (animatedLookTarget) camera.lookAt(animatedLookTarget);
-          }
-        });
+  // 2. Build the Timeline
+  heroTimeline = gsap.timeline({
+    scrollTrigger: {
+      trigger: heroSection || ".hero-section",
+      start: "top top",
+      end: CAMERA_SCROLL_CONFIG.scrollDistance,
+      scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
+      pin: true,
+      anticipatePin: 1,
+      invalidateOnRefresh: true
+    },
+    onUpdate: () => {
+      camera.updateProjectionMatrix();
+      if (animatedLookTarget) camera.lookAt(animatedLookTarget);
+    }
+  });
 
-        // Use standard 'to' instead of 'fromTo' for position to avoid conflicts
-        heroTimeline.to(camera.position, {
-          x: () => logoPos.clone().add(isMobile() ? CAMERA_SCROLL_CONFIG.midOffset : CAMERA_SCROLL_CONFIG.midOffset).x,
-          y: () => logoPos.clone().add(isMobile() ? CAMERA_SCROLL_CONFIG.midOffset : CAMERA_SCROLL_CONFIG.midOffset).y,
-          z: () => logoPos.clone().add(isMobile() ? CAMERA_SCROLL_CONFIG.midOffset : CAMERA_SCROLL_CONFIG.midOffset).z,
-          ease: "power1.in",
-          duration: 1
-        }, 0);
+  heroTimeline.to(camera.position, {
+    x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).x,
+    y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).y,
+    z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).z,
+    ease: "power1.in",
+    duration: 1
+  }, 0);
 
-        heroTimeline.to(camera.position, {
-          x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).x,
-          y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).y,
-          z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).z,
-          ease: "power1.out",
-          duration: 1
-        }, 1);
+  heroTimeline.to(camera.position, {
+    x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).x,
+    y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).y,
+    z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).z,
+    ease: "power1.out",
+    duration: 1
+  }, 1);
 
-        heroTimeline.to(camera, {
-          fov: () => CAMERA_SCROLL_CONFIG.fov.end,
-          ease: "power2.inOut",
-          duration: 2
-        }, 0);
+  heroTimeline.to(camera, {
+    fov: () => CAMERA_SCROLL_CONFIG.fov.end,
+    ease: "power2.inOut",
+    duration: 2
+  }, 0);
 
-        heroTimeline.to(bloomPass, {
-          strength: CAMERA_SCROLL_CONFIG.bloom.end,
-          ease: "power2.inOut",
-          duration: 2
-        }, 0);
+  heroTimeline.to(bloomPass, {
+    strength: CAMERA_SCROLL_CONFIG.bloom.end,
+    ease: "power2.inOut",
+    duration: 2
+  }, 0);
 
-        // CRITICAL: Force ScrollTrigger to re-calculate its height after the timeline is built
+  ScrollTrigger.refresh();
+};
+
+const revealSceneWhenReady = () => {
+  if (hasRevealedScene) return;
+  hasRevealedScene = true;
+
+  if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+    ScrollTrigger.clearScrollMemory();
+  }
+
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
+  requestAnimationFrame(() => {
+    buildHeroTimeline(logoPos); // ✅ pass logoPos here
+
+    requestAnimationFrame(() => {
+      hidePreloader(() => {
+        setScrollLocked(false);
         ScrollTrigger.refresh();
-      };
-
-      const revealSceneWhenReady = () => {
-        if (hasRevealedScene) return;
-        hasRevealedScene = true;
-
-        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
-          ScrollTrigger.clearScrollMemory();
+        if (heroTimeline?.scrollTrigger) {
+          heroTimeline.scrollTrigger.update();
         }
-
-        window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-
-        requestAnimationFrame(() => {
-          buildHeroTimeline(); // We don't need to pass midPos/endPos anymore!
-
-          requestAnimationFrame(() => {
-            hidePreloader(() => {
-              setScrollLocked(false);
-              ScrollTrigger.refresh();
-              if (heroTimeline?.scrollTrigger) {
-                heroTimeline.scrollTrigger.update();
-              }
-            });
-          });
-        });
-      };
+      });
+    });
+  });
+};
 
       const logo = model.getObjectByName('Logo');
       if (logo) {
