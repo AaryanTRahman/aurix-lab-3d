@@ -392,7 +392,7 @@ async function initScene() {
 
         animatedLookTarget.copy(startLookTarget);
         camera.position.copy(startPos);
-        camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
+        // camera.fov = CAMERA_SCROLL_CONFIG.fov.start;
         camera.updateProjectionMatrix();
         bloomPass.strength = CAMERA_SCROLL_CONFIG.bloom.start;
         camera.lookAt(animatedLookTarget);
@@ -486,7 +486,7 @@ const buildHeroTimeline = (midPos, endPos) => {
         startLookTarget = lookTarget.clone();
         animatedLookTarget = startLookTarget.clone();
       
-        camera.fov = mobile ? 100 : 56; // ✅ set start FOV statically here
+        camera.fov = mobile ? 70 : 56; // ✅ set start FOV statically here
       
         resetToStartFrame();
         composer.render();
