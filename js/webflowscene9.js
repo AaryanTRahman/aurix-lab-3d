@@ -426,10 +426,10 @@ async function initScene() {
 const buildHeroTimeline = () => {
         heroTimeline?.kill();
 
-        // 1. Recalculate start state dynamically so reset puts us in the right spot
-        startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
+        // 1. Reset Camera and Fov
         resetToStartFrame();
 
+        // 2. Build the Timeline
         heroTimeline = gsap.timeline({
           scrollTrigger: {
             trigger: heroSection || ".hero-section",
@@ -437,30 +437,24 @@ const buildHeroTimeline = () => {
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
-            invalidateOnRefresh: true, // CRITICAL: Tells GSAP to re-evaluate functions on resize!
-            anticipatePin: 1
+            anticipatePin: 1,
+            invalidateOnRefresh: true
           },
           onUpdate: () => {
-            if (animatedLookTarget) camera.lookAt(animatedLookTarget);
+             // Constantly update FOV and Camera LookAt during scroll
+             camera.updateProjectionMatrix();
+             if (animatedLookTarget) camera.lookAt(animatedLookTarget);
           }
         });
 
-        // 2. Use `fromTo` with `() =>` functions. 
-        // This forces GSAP to check isMobile() every time the screen resizes!
-        heroTimeline.fromTo(camera.position, 
-          {
-            x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset).x,
-            y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset).y,
-            z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset).z,
-          },
-          {
-            x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).x,
-            y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).y,
-            z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).z,
-            ease: "power1.in",
-            duration: 1
-          }, 0
-        );
+        // Use standard 'to' instead of 'fromTo' for position to avoid conflicts
+        heroTimeline.to(camera.position, {
+          x: () => logoPos.clone().add(isMobile() ? CAMERA_SCROLL_CONFIG.midOffset : CAMERA_SCROLL_CONFIG.midOffset).x,
+          y: () => logoPos.clone().add(isMobile() ? CAMERA_SCROLL_CONFIG.midOffset : CAMERA_SCROLL_CONFIG.midOffset).y,
+          z: () => logoPos.clone().add(isMobile() ? CAMERA_SCROLL_CONFIG.midOffset : CAMERA_SCROLL_CONFIG.midOffset).z,
+          ease: "power1.in",
+          duration: 1
+        }, 0);
 
         heroTimeline.to(camera.position, {
           x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).x,
@@ -470,15 +464,11 @@ const buildHeroTimeline = () => {
           duration: 1
         }, 1);
 
-        heroTimeline.fromTo(camera, 
-          { fov: () => CAMERA_SCROLL_CONFIG.fov.start },
-          {
-            fov: () => CAMERA_SCROLL_CONFIG.fov.end,
-            ease: "power2.inOut",
-            duration: 2,
-            onUpdate: () => camera.updateProjectionMatrix()
-          }, 0
-        );
+        heroTimeline.to(camera, {
+          fov: () => CAMERA_SCROLL_CONFIG.fov.end,
+          ease: "power2.inOut",
+          duration: 2
+        }, 0);
 
         heroTimeline.to(bloomPass, {
           strength: CAMERA_SCROLL_CONFIG.bloom.end,
@@ -486,6 +476,7 @@ const buildHeroTimeline = () => {
           duration: 2
         }, 0);
 
+        // CRITICAL: Force ScrollTrigger to re-calculate its height after the timeline is built
         ScrollTrigger.refresh();
       };
 
