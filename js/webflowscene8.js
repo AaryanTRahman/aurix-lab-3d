@@ -26,27 +26,42 @@ const LIGHTMAP_CONFIG = {
   'Black Table top': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapTable.hdr',
 };
 
+// Helper to check if the screen is mobile-sized
+function isMobile() {
+  return window.innerWidth <= 768; // Adjust 768px to your Webflow mobile breakpoint
+}
+
 // ─── CAMERA SCROLL ANIMATION CONFIG ──────────────────────────────────────────
 const CAMERA_SCROLL_CONFIG = {
   // Coordinates are relative to the "Logo" object.
   // Start: Far back and slightly high
-  startOffset: new THREE.Vector3(-0.3, -0.9, 10), 
+  get startOffset() {
+    return new THREE.Vector3(isMobile() ? -1.5 : -1, -0.9, isMobile() ? 11 : 10);
+  },
 
-  midOffset: new THREE.Vector3(0, -0.5, 6),
+  get midOffset() {
+    return new THREE.Vector3(0.2, -0.8, isMobile() ? 8.5: 6);
+  },
 
   // End: Close up to the logo
-  endOffset: new THREE.Vector3(0, 0, 4),    
+  get endOffset() {
+    return new THREE.Vector3(0, isMobile() ? -0.5 : 0, isMobile() ? 7 : 4);
+  },
   // Where the camera constantly stares during the animation
-  lookAtOffset: new THREE.Vector3(0, 0, 0), 
+  get lookAtOffset() {
+    return new THREE.Vector3(0, 0, 0);
+  },
 
   // Camera Field of View (Zoom effect)
-  fov: { start: 56, end: 26 },
+  get fov() {
+    return { start: isMobile() ? 70 : 56, end: isMobile() ? 55 : 26 };
+  },
 
   // Bloom Glow Strength
   bloom: { start: 0.1, end: 0.04 },
   
   // How many pixels the user has to scroll to complete the animation
-  // (e.g., "+=3000" means 3000px of scrolling before the site moves down)
+  // (e.g., "+=1300" means 1300px of scrolling before the site moves down)
   scrollDistance: "+=1300",
   
   // Smoothness (higher = more floaty lag when scrolling stops)
@@ -408,9 +423,11 @@ async function initScene() {
         camera.lookAt(animatedLookTarget);
       };
 
-      const buildHeroTimeline = (midPos, endPos) => {
+const buildHeroTimeline = () => {
         heroTimeline?.kill();
 
+        // 1. Recalculate start state dynamically so reset puts us in the right spot
+        startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
         resetToStartFrame();
 
         heroTimeline = gsap.timeline({
@@ -420,7 +437,7 @@ async function initScene() {
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
-            invalidateOnRefresh: true,
+            invalidateOnRefresh: true, // CRITICAL: Tells GSAP to re-evaluate functions on resize!
             anticipatePin: 1
           },
           onUpdate: () => {
@@ -428,32 +445,40 @@ async function initScene() {
           }
         });
 
-        heroTimeline.to(camera.position, {
-          x: midPos.x, y: midPos.y, z: midPos.z,
-          ease: "power1.in",
-          duration: 1
-        }, 0);
+        // 2. Use `fromTo` with `() =>` functions. 
+        // This forces GSAP to check isMobile() every time the screen resizes!
+        heroTimeline.fromTo(camera.position, 
+          {
+            x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset).x,
+            y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset).y,
+            z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset).z,
+          },
+          {
+            x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).x,
+            y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).y,
+            z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset).z,
+            ease: "power1.in",
+            duration: 1
+          }, 0
+        );
 
         heroTimeline.to(camera.position, {
-          x: endPos.x, y: endPos.y, z: endPos.z,
+          x: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).x,
+          y: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).y,
+          z: () => logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset).z,
           ease: "power1.out",
           duration: 1
         }, 1);
 
-        heroTimeline.to(camera, {
-          fov: CAMERA_SCROLL_CONFIG.fov.end,
-          ease: "power2.inOut",
-          duration: 2,
-          onUpdate: () => camera.updateProjectionMatrix()
-        }, 0);
-
-        heroTimeline.to(animatedLookTarget, {
-          x: lookTarget.x,
-          y: lookTarget.y,
-          z: lookTarget.z,
-          ease: "power2.inOut",
-          duration: 2
-        }, 0);
+        heroTimeline.fromTo(camera, 
+          { fov: () => CAMERA_SCROLL_CONFIG.fov.start },
+          {
+            fov: () => CAMERA_SCROLL_CONFIG.fov.end,
+            ease: "power2.inOut",
+            duration: 2,
+            onUpdate: () => camera.updateProjectionMatrix()
+          }, 0
+        );
 
         heroTimeline.to(bloomPass, {
           strength: CAMERA_SCROLL_CONFIG.bloom.end,
@@ -464,7 +489,7 @@ async function initScene() {
         ScrollTrigger.refresh();
       };
 
-      const revealSceneWhenReady = (midPos, endPos) => {
+      const revealSceneWhenReady = () => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
 
@@ -477,7 +502,7 @@ async function initScene() {
         document.body.scrollTop = 0;
 
         requestAnimationFrame(() => {
-          buildHeroTimeline(midPos, endPos);
+          buildHeroTimeline(); // We don't need to pass midPos/endPos anymore!
 
           requestAnimationFrame(() => {
             hidePreloader(() => {
@@ -514,7 +539,7 @@ async function initScene() {
         composer.render();
 
         // Only enable the scroll animation after the preloader is fully done.
-        waitForPreloaderVideo(() => revealSceneWhenReady(midPos, endPos));
+        waitForPreloaderVideo(() => revealSceneWhenReady());
 
       } else {
         console.warn("Could not find an object named 'Logo' to focus on!");
