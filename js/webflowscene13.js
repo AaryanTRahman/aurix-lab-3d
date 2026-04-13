@@ -486,7 +486,7 @@ const buildHeroTimeline = (midPos, endPos) => {
         startLookTarget = lookTarget.clone();
         animatedLookTarget = startLookTarget.clone();
       
-        camera.fov = mobile ? 70 : 56; // ✅ set start FOV statically here
+        camera.fov = mobile ? 75 : 56; // ✅ set start FOV statically here
       
         resetToStartFrame();
         composer.render();
