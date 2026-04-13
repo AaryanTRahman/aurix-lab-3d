@@ -33,39 +33,14 @@ function isMobile() {
 
 // ─── CAMERA SCROLL ANIMATION CONFIG ──────────────────────────────────────────
 const CAMERA_SCROLL_CONFIG = {
-  // Coordinates are relative to the "Logo" object.
-  // Start: Far back and slightly high
-  get startOffset() {
-    return new THREE.Vector3(isMobile() ? -1.5 : -1, -0.9, isMobile() ? 11 : 10);
-  },
-
-  get midOffset() {
-    return new THREE.Vector3(0.2, -0.8, isMobile() ? 8.5: 6);
-  },
-
-  // End: Close up to the logo
-  get endOffset() {
-    return new THREE.Vector3(0, isMobile() ? -0.5 : 0, isMobile() ? 7 : 4);
-  },
-  // Where the camera constantly stares during the animation
-  get lookAtOffset() {
-    return new THREE.Vector3(0, 0, 0);
-  },
-
-  // Camera Field of View (Zoom effect)
-  get fov() {
-    return { start: isMobile() ? 70 : 56, end: isMobile() ? 55 : 26 };
-  },
-
-  // Bloom Glow Strength
+  startOffset: new THREE.Vector3(-1, -0.9, 10),
+  midOffset: new THREE.Vector3(0.2, -0.8, 6),
+  endOffset: new THREE.Vector3(0, 0, 4),
+  lookAtOffset: new THREE.Vector3(0, 0, 0),
+  fov: { start: 56, end: 26 },
   bloom: { start: 0.1, end: 0.04 },
-  
-  // How many pixels the user has to scroll to complete the animation
-  // (e.g., "+=1300" means 1300px of scrolling before the site moves down)
   scrollDistance: "+=1300",
-  
-  // Smoothness (higher = more floaty lag when scrolling stops)
-  scrubSmoothness: 1.5 
+  scrubSmoothness: 1.5
 };
 
 // ─── Debug Configuration ─────────────────────────────────────────────────────
@@ -424,60 +399,50 @@ async function initScene() {
       };
 
 const buildHeroTimeline = (midPos, endPos) => {
-        heroTimeline?.kill();
+  heroTimeline?.kill();
+  resetToStartFrame();
 
-        resetToStartFrame();
+  const fovEnd = isMobile() ? 55 : 26; // ✅ evaluated once at build time
 
-        heroTimeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: heroSection || ".hero-section",
-            start: "top top",
-            end: CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin: true,
-            invalidateOnRefresh: true,
-            anticipatePin: 1
-          },
-          onUpdate: () => {
-            if (animatedLookTarget) camera.lookAt(animatedLookTarget);
-          }
-        });
+  heroTimeline = gsap.timeline({
+    scrollTrigger: {
+      trigger: heroSection || ".hero-section",
+      start: "top top",
+      end: CAMERA_SCROLL_CONFIG.scrollDistance,
+      scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
+      pin: true,
+      invalidateOnRefresh: true,
+      anticipatePin: 1
+    },
+    onUpdate: () => {
+      if (animatedLookTarget) camera.lookAt(animatedLookTarget);
+    }
+  });
 
-        heroTimeline.to(camera.position, {
-          x: midPos.x, y: midPos.y, z: midPos.z,
-          ease: "power1.in",
-          duration: 1
-        }, 0);
+  heroTimeline.to(camera.position, { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 }, 0);
+  heroTimeline.to(camera.position, { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 }, 1);
 
-        heroTimeline.to(camera.position, {
-          x: endPos.x, y: endPos.y, z: endPos.z,
-          ease: "power1.out",
-          duration: 1
-        }, 1);
+  heroTimeline.to(camera, {
+    fov: fovEnd,
+    ease: "power2.inOut",
+    duration: 2,
+    onUpdate: () => camera.updateProjectionMatrix()
+  }, 0);
 
-        heroTimeline.to(camera, {
-          fov: CAMERA_SCROLL_CONFIG.fov.end,
-          ease: "power2.inOut",
-          duration: 2,
-          onUpdate: () => camera.updateProjectionMatrix()
-        }, 0);
+  heroTimeline.to(animatedLookTarget, {
+    x: lookTarget.x, y: lookTarget.y, z: lookTarget.z,
+    ease: "power2.inOut",
+    duration: 2
+  }, 0);
 
-        heroTimeline.to(animatedLookTarget, {
-          x: lookTarget.x,
-          y: lookTarget.y,
-          z: lookTarget.z,
-          ease: "power2.inOut",
-          duration: 2
-        }, 0);
+  heroTimeline.to(bloomPass, {
+    strength: CAMERA_SCROLL_CONFIG.bloom.end,
+    ease: "power2.inOut",
+    duration: 2
+  }, 0);
 
-        heroTimeline.to(bloomPass, {
-          strength: CAMERA_SCROLL_CONFIG.bloom.end,
-          ease: "power2.inOut",
-          duration: 2
-        }, 0);
-
-        ScrollTrigger.refresh();
-      };
+  ScrollTrigger.refresh();
+};
 
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
@@ -510,27 +475,23 @@ const buildHeroTimeline = (midPos, endPos) => {
       if (logo) {
         const logoPos = new THREE.Vector3();
         logo.getWorldPosition(logoPos);
-        
-        // ─── RESTORED: USE THE CONFIG VALUES ────────────────────────────────
-        startPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.startOffset);
-        const midPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.midOffset);
-        const endPos = logoPos.clone().add(CAMERA_SCROLL_CONFIG.endOffset);
-        
+      
+        const mobile = isMobile(); // ✅ evaluated once
+      
+        startPos = logoPos.clone().add(new THREE.Vector3(mobile ? -1.5 : -1,  -0.9,            mobile ? 11  : 10));
+        const midPos = logoPos.clone().add(new THREE.Vector3(0.2,              -0.8,            mobile ? 8.5 :  6));
+        const endPos = logoPos.clone().add(new THREE.Vector3(0,                mobile ? -0.5 : 0, mobile ?  7 :  4));
+      
         lookTarget = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtOffset);
-        
-        // This forces the camera to stare at the logo from the very beginning 
-        // instead of looking at the center of the room.
         startLookTarget = lookTarget.clone();
         animatedLookTarget = startLookTarget.clone();
-        // ────────────────────────────────────────────────────────────────────
-        
-        // Show the room view immediately after the model is ready.
+      
+        camera.fov = mobile ? 70 : 56; // ✅ set start FOV statically here
+      
         resetToStartFrame();
         composer.render();
-
-        // Only enable the scroll animation after the preloader is fully done.
-        waitForPreloaderVideo(() => revealSceneWhenReady());
-
+      
+        waitForPreloaderVideo(() => revealSceneWhenReady(midPos, endPos));
       } else {
         console.warn("Could not find an object named 'Logo' to focus on!");
         hidePreloader(() => setScrollLocked(false));
