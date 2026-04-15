@@ -303,8 +303,8 @@ function resizeScene() {
     composer.setSize(width, height);
   }
 
-  // Optional: ScrollTrigger.refresh() helps recalculate pinned containers on resize
-  ScrollTrigger.refresh();
+  // Optional: .refresh() helps recalculate pinned containers on resize
+  .refresh();
 }
 
 window.addEventListener('resize', resizeScene);
@@ -493,8 +493,13 @@ const buildHeroTimeline = (midPos, endPos) => {
       end: CAMERA_SCROLL_CONFIG.scrollDistance,
       scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
       pin: true,
+      pinSpacing: true, // Force the spacer to exist
       invalidateOnRefresh: true,
       anticipatePin: 1
+       onLeave: () => {
+                // This prevents the page from flickering or jumping
+                ScrollTrigger.refresh(); 
+            }
     },
     onUpdate: () => {
       if (animatedLookTarget) camera.lookAt(animatedLookTarget);
