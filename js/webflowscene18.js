@@ -183,9 +183,6 @@ const FX_CONFIG = {
 const container = document.querySelector('.hero-bg-3d-animation');
 const heroSection = document.querySelector('.hero-section');
 const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-
-// CRITICAL: Target Webflow's video container AND the hidden <video> tag inside it
-const videoContainer = document.querySelector('.preloader-video-desktop');
 const preloaderVideo = document.querySelector('.preloader-video-desktop video');
 
 const initialLoaderDisplay = loaderElement
@@ -212,22 +209,12 @@ function keepPreloaderVisible() {
   loaderElement.style.pointerEvents = 'auto';
 }
 
-// ─── INDEPENDENT VIDEO FADE LOGIC ───
-// Fades out the video the exact second it ends, revealing the % text underneath
-if (preloaderVideo && videoContainer) {
-  const fadeOutVideo = () => {
-    gsap.to(videoContainer, { opacity: 0, duration: 0.5, ease: "power2.out" });
-  };
-  if (preloaderVideo.ended) {
-    fadeOutVideo();
-  } else {
-    preloaderVideo.addEventListener('ended', fadeOutVideo, { once: true });
-  }
-}
-
 function hidePreloader(onComplete) {
-  if (!loaderElement) return onComplete?.();
-  
+  if (!loaderElement) {
+    onComplete?.();
+    return;
+  }
+
   gsap.to(loaderElement, {
     opacity: 0,
     duration: 0.6,
@@ -244,6 +231,7 @@ function hidePreloader(onComplete) {
   });
 }
 
+// Waits for the video to finish, or forces it to finish after 4.5 seconds
 function waitForPreloaderVideo(callback) {
   const loader = loaderElement;
   if (!loader) return callback();
@@ -255,30 +243,17 @@ function waitForPreloaderVideo(callback) {
     callback();
   };
 
-  const isHidden = () => {
-    const styles = window.getComputedStyle(loader);
-    return (styles.display === 'none' || styles.visibility === 'hidden' || Number.parseFloat(styles.opacity) === 0);
-  };
-
-  if (isHidden()) return finish();
-
   if (preloaderVideo) {
-    if (preloaderVideo.ended) return finish();
+    // If the video isn't looping, wait for it to end
     preloaderVideo.addEventListener('ended', finish, { once: true });
     preloaderVideo.addEventListener('error', finish, { once: true });
-  } else {
-    // If no video is found, just finish immediately
-    finish();
   }
 
-  const observer = new MutationObserver(() => {
-    if (!document.body.contains(loader) || isHidden()) {
-      observer.disconnect();
-      finish();
-    }
-  });
-  observer.observe(loader, { attributes: true, attributeFilter: ['class', 'style'] });
-  window.setTimeout(() => { observer.disconnect(); finish(); }, 4500);
+  // FALLBACK: Force the 3D scene to reveal after 4.5 seconds no matter what.
+  // (Adjust this number to match the length of your Webflow video!)
+  window.setTimeout(() => { 
+    finish(); 
+  }, 4500); 
 }
 
 if (loaderElement) {
