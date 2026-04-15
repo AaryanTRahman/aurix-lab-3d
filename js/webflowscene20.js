@@ -309,6 +309,12 @@ function resizeScene() {
 
 window.addEventListener('resize', resizeScene);
 
+window.addEventListener('beforeunload', () => {
+    renderer.dispose();
+    composer.dispose();
+    scene.clear();
+});
+
 // ─── Process Scene Function ──────────────────────────────────────────────────
 function processScene(gltf, loadedLightmaps) {
   const model = gltf.scene;
