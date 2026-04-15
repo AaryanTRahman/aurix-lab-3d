@@ -61,10 +61,133 @@ const FX_CONFIG = {
 };
 
 // ─── Renderer ────────────────────────────────────────────────────────────────
+// const container = document.querySelector('.hero-bg-3d-animation');
+// const heroSection = document.querySelector('.hero-section');
+// const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+// const preloaderVideo = document.querySelector('.preloader-player');
+// const initialLoaderDisplay = loaderElement
+//   ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
+//   : 'flex';
+
+// function getViewportSize() {
+//   const width = container?.clientWidth || window.innerWidth;
+//   const height = container?.clientHeight || window.innerHeight;
+
+//   return {
+//     width: Math.max(width, 1),
+//     height: Math.max(height, 1)
+//   };
+// }
+
+// function setScrollLocked(locked) {
+//   const value = locked ? 'hidden' : '';
+//   document.documentElement.style.overflow = value;
+//   document.body.style.overflow = value;
+// }
+
+// function keepPreloaderVisible() {
+//   if (!loaderElement) return;
+
+//   loaderElement.style.display = initialLoaderDisplay;
+//   loaderElement.style.opacity = '1';
+//   loaderElement.style.visibility = 'visible';
+//   loaderElement.style.pointerEvents = 'auto';
+// }
+
+// function hidePreloader(onComplete) {
+//   if (!loaderElement) {
+//     onComplete?.();
+//     return;
+//   }
+
+//   gsap.to(loaderElement, {
+//     opacity: 0,
+//     duration: 0.6,
+//     ease: 'power2.out',
+//     onStart: () => {
+//       loaderElement.style.visibility = 'visible';
+//       loaderElement.style.pointerEvents = 'none';
+//     },
+//     onComplete: () => {
+//       loaderElement.style.display = 'none';
+//       loaderElement.style.visibility = 'hidden';
+//       onComplete?.();
+//     }
+//   });
+// }
+
+// function waitForPreloaderVideo(callback) {
+//   const loader = loaderElement;
+
+//   if (!loader) {
+//     callback();
+//     return;
+//   }
+
+//   let didFinish = false;
+
+//   const finish = () => {
+//     if (didFinish) return;
+//     didFinish = true;
+//     callback();
+//   };
+
+//   const isHidden = () => {
+//     const styles = window.getComputedStyle(loader);
+//     return (
+//       styles.display === 'none' ||
+//       styles.visibility === 'hidden' ||
+//       Number.parseFloat(styles.opacity) === 0
+//     );
+//   };
+
+//   if (isHidden()) {
+//     finish();
+//     return;
+//   }
+
+//   if (preloaderVideo) {
+//     if (preloaderVideo.ended) {
+//       finish();
+//       return;
+//     }
+
+//     preloaderVideo.addEventListener('ended', finish, { once: true });
+//     preloaderVideo.addEventListener('error', finish, { once: true });
+//   }
+
+//   const observer = new MutationObserver(() => {
+//     if (!document.body.contains(loader) || isHidden()) {
+//       observer.disconnect();
+//       finish();
+//     }
+//   });
+
+//   observer.observe(loader, {
+//     attributes: true,
+//     attributeFilter: ['class', 'style']
+//   });
+
+//   window.setTimeout(() => {
+//     observer.disconnect();
+//     finish();
+//   }, 4500);
+// }
+
+// if (loaderElement) {
+//   setScrollLocked(true);
+//   keepPreloaderVisible();
+// }
+
+// ─── Renderer & Preloader Setup ──────────────────────────────────────────────
 const container = document.querySelector('.hero-bg-3d-animation');
 const heroSection = document.querySelector('.hero-section');
 const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-const preloaderVideo = document.querySelector('.preloader-player');
+
+// CRITICAL: Target Webflow's video container AND the hidden <video> tag inside it
+const videoContainer = document.querySelector('.preloader-video-desktop');
+const preloaderVideo = document.querySelector('.preloader-video-desktop video');
+
 const initialLoaderDisplay = loaderElement
   ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
   : 'flex';
@@ -72,11 +195,7 @@ const initialLoaderDisplay = loaderElement
 function getViewportSize() {
   const width = container?.clientWidth || window.innerWidth;
   const height = container?.clientHeight || window.innerHeight;
-
-  return {
-    width: Math.max(width, 1),
-    height: Math.max(height, 1)
-  };
+  return { width: Math.max(width, 1), height: Math.max(height, 1) };
 }
 
 function setScrollLocked(locked) {
@@ -87,19 +206,28 @@ function setScrollLocked(locked) {
 
 function keepPreloaderVisible() {
   if (!loaderElement) return;
-
   loaderElement.style.display = initialLoaderDisplay;
   loaderElement.style.opacity = '1';
   loaderElement.style.visibility = 'visible';
   loaderElement.style.pointerEvents = 'auto';
 }
 
-function hidePreloader(onComplete) {
-  if (!loaderElement) {
-    onComplete?.();
-    return;
+// ─── INDEPENDENT VIDEO FADE LOGIC ───
+// Fades out the video the exact second it ends, revealing the % text underneath
+if (preloaderVideo && videoContainer) {
+  const fadeOutVideo = () => {
+    gsap.to(videoContainer, { opacity: 0, duration: 0.5, ease: "power2.out" });
+  };
+  if (preloaderVideo.ended) {
+    fadeOutVideo();
+  } else {
+    preloaderVideo.addEventListener('ended', fadeOutVideo, { once: true });
   }
+}
 
+function hidePreloader(onComplete) {
+  if (!loaderElement) return onComplete?.();
+  
   gsap.to(loaderElement, {
     opacity: 0,
     duration: 0.6,
@@ -118,14 +246,9 @@ function hidePreloader(onComplete) {
 
 function waitForPreloaderVideo(callback) {
   const loader = loaderElement;
-
-  if (!loader) {
-    callback();
-    return;
-  }
+  if (!loader) return callback();
 
   let didFinish = false;
-
   const finish = () => {
     if (didFinish) return;
     didFinish = true;
@@ -134,26 +257,18 @@ function waitForPreloaderVideo(callback) {
 
   const isHidden = () => {
     const styles = window.getComputedStyle(loader);
-    return (
-      styles.display === 'none' ||
-      styles.visibility === 'hidden' ||
-      Number.parseFloat(styles.opacity) === 0
-    );
+    return (styles.display === 'none' || styles.visibility === 'hidden' || Number.parseFloat(styles.opacity) === 0);
   };
 
-  if (isHidden()) {
-    finish();
-    return;
-  }
+  if (isHidden()) return finish();
 
   if (preloaderVideo) {
-    if (preloaderVideo.ended) {
-      finish();
-      return;
-    }
-
+    if (preloaderVideo.ended) return finish();
     preloaderVideo.addEventListener('ended', finish, { once: true });
     preloaderVideo.addEventListener('error', finish, { once: true });
+  } else {
+    // If no video is found, just finish immediately
+    finish();
   }
 
   const observer = new MutationObserver(() => {
@@ -162,16 +277,8 @@ function waitForPreloaderVideo(callback) {
       finish();
     }
   });
-
-  observer.observe(loader, {
-    attributes: true,
-    attributeFilter: ['class', 'style']
-  });
-
-  window.setTimeout(() => {
-    observer.disconnect();
-    finish();
-  }, 4500);
+  observer.observe(loader, { attributes: true, attributeFilter: ['class', 'style'] });
+  window.setTimeout(() => { observer.disconnect(); finish(); }, 4500);
 }
 
 if (loaderElement) {
