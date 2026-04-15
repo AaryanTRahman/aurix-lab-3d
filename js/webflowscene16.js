@@ -441,6 +441,8 @@ const buildHeroTimeline = (midPos, endPos) => {
     duration: 2
   }, 0);
 
+  heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
+
   ScrollTrigger.refresh();
 };
 
