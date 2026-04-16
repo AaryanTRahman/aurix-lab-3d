@@ -501,7 +501,7 @@ const buildHeroTimeline = (midPos, endPos) => {
       pin: true,
       pinSpacing: true, // Force the spacer to exist
       invalidateOnRefresh: true,
-      anticipatePin: 1
+      anticipatePin: 1,
        onLeave: () => {
                 // This prevents the page from flickering or jumping
                 ScrollTrigger.refresh(); 
