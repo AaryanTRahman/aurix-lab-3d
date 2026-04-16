@@ -61,130 +61,10 @@ const FX_CONFIG = {
 };
 
 // ─── Renderer ────────────────────────────────────────────────────────────────
-// const container = document.querySelector('.hero-bg-3d-animation');
-// const heroSection = document.querySelector('.hero-section');
-// const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-// const preloaderVideo = document.querySelector('.preloader-player');
-// const initialLoaderDisplay = loaderElement
-//   ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
-//   : 'flex';
-
-// function getViewportSize() {
-//   const width = container?.clientWidth || window.innerWidth;
-//   const height = container?.clientHeight || window.innerHeight;
-
-//   return {
-//     width: Math.max(width, 1),
-//     height: Math.max(height, 1)
-//   };
-// }
-
-// function setScrollLocked(locked) {
-//   const value = locked ? 'hidden' : '';
-//   document.documentElement.style.overflow = value;
-//   document.body.style.overflow = value;
-// }
-
-// function keepPreloaderVisible() {
-//   if (!loaderElement) return;
-
-//   loaderElement.style.display = initialLoaderDisplay;
-//   loaderElement.style.opacity = '1';
-//   loaderElement.style.visibility = 'visible';
-//   loaderElement.style.pointerEvents = 'auto';
-// }
-
-// function hidePreloader(onComplete) {
-//   if (!loaderElement) {
-//     onComplete?.();
-//     return;
-//   }
-
-//   gsap.to(loaderElement, {
-//     opacity: 0,
-//     duration: 0.6,
-//     ease: 'power2.out',
-//     onStart: () => {
-//       loaderElement.style.visibility = 'visible';
-//       loaderElement.style.pointerEvents = 'none';
-//     },
-//     onComplete: () => {
-//       loaderElement.style.display = 'none';
-//       loaderElement.style.visibility = 'hidden';
-//       onComplete?.();
-//     }
-//   });
-// }
-
-// function waitForPreloaderVideo(callback) {
-//   const loader = loaderElement;
-
-//   if (!loader) {
-//     callback();
-//     return;
-//   }
-
-//   let didFinish = false;
-
-//   const finish = () => {
-//     if (didFinish) return;
-//     didFinish = true;
-//     callback();
-//   };
-
-//   const isHidden = () => {
-//     const styles = window.getComputedStyle(loader);
-//     return (
-//       styles.display === 'none' ||
-//       styles.visibility === 'hidden' ||
-//       Number.parseFloat(styles.opacity) === 0
-//     );
-//   };
-
-//   if (isHidden()) {
-//     finish();
-//     return;
-//   }
-
-//   if (preloaderVideo) {
-//     if (preloaderVideo.ended) {
-//       finish();
-//       return;
-//     }
-
-//     preloaderVideo.addEventListener('ended', finish, { once: true });
-//     preloaderVideo.addEventListener('error', finish, { once: true });
-//   }
-
-//   const observer = new MutationObserver(() => {
-//     if (!document.body.contains(loader) || isHidden()) {
-//       observer.disconnect();
-//       finish();
-//     }
-//   });
-
-//   observer.observe(loader, {
-//     attributes: true,
-//     attributeFilter: ['class', 'style']
-//   });
-
-//   window.setTimeout(() => {
-//     observer.disconnect();
-//     finish();
-//   }, 4500);
-// }
-
-// if (loaderElement) {
-//   setScrollLocked(true);
-//   keepPreloaderVisible();
-// }
-
-// ─── Renderer & Preloader Setup ──────────────────────────────────────────────
 const container = document.querySelector('.hero-bg-3d-animation');
 const heroSection = document.querySelector('.hero-section');
 const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-const preloaderVideo = document.querySelector('.preloader-wrapper video');
-
+const preloaderVideo = document.querySelector('.preloader-player');
 const initialLoaderDisplay = loaderElement
   ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
   : 'flex';
@@ -192,7 +72,11 @@ const initialLoaderDisplay = loaderElement
 function getViewportSize() {
   const width = container?.clientWidth || window.innerWidth;
   const height = container?.clientHeight || window.innerHeight;
-  return { width: Math.max(width, 1), height: Math.max(height, 1) };
+
+  return {
+    width: Math.max(width, 1),
+    height: Math.max(height, 1)
+  };
 }
 
 function setScrollLocked(locked) {
@@ -203,6 +87,7 @@ function setScrollLocked(locked) {
 
 function keepPreloaderVisible() {
   if (!loaderElement) return;
+
   loaderElement.style.display = initialLoaderDisplay;
   loaderElement.style.opacity = '1';
   loaderElement.style.visibility = 'visible';
@@ -231,29 +116,62 @@ function hidePreloader(onComplete) {
   });
 }
 
-// Waits for the video to finish, or forces it to finish after 4.5 seconds
 function waitForPreloaderVideo(callback) {
   const loader = loaderElement;
-  if (!loader) return callback();
+
+  if (!loader) {
+    callback();
+    return;
+  }
 
   let didFinish = false;
+
   const finish = () => {
     if (didFinish) return;
     didFinish = true;
     callback();
   };
 
+  const isHidden = () => {
+    const styles = window.getComputedStyle(loader);
+    return (
+      styles.display === 'none' ||
+      styles.visibility === 'hidden' ||
+      Number.parseFloat(styles.opacity) === 0
+    );
+  };
+
+  if (isHidden()) {
+    finish();
+    return;
+  }
+
   if (preloaderVideo) {
-    // If the video isn't looping, wait for it to end
+    if (preloaderVideo.ended) {
+      finish();
+      return;
+    }
+
     preloaderVideo.addEventListener('ended', finish, { once: true });
     preloaderVideo.addEventListener('error', finish, { once: true });
   }
 
-  // FALLBACK: Force the 3D scene to reveal after 4.5 seconds no matter what.
-  // (Adjust this number to match the length of your Webflow video!)
-  window.setTimeout(() => { 
-    finish(); 
-  }, 4500); 
+  const observer = new MutationObserver(() => {
+    if (!document.body.contains(loader) || isHidden()) {
+      observer.disconnect();
+      finish();
+    }
+  });
+
+  observer.observe(loader, {
+    attributes: true,
+    attributeFilter: ['class', 'style']
+  });
+
+  window.setTimeout(() => {
+    observer.disconnect();
+    finish();
+  }, 4500);
 }
 
 if (loaderElement) {
@@ -303,17 +221,11 @@ function resizeScene() {
     composer.setSize(width, height);
   }
 
-  // Optional: .refresh() helps recalculate pinned containers on resize
+  // Optional: ScrollTrigger.refresh() helps recalculate pinned containers on resize
   ScrollTrigger.refresh();
 }
 
 window.addEventListener('resize', resizeScene);
-
-window.addEventListener('beforeunload', () => {
-    renderer.dispose();
-    composer.dispose();
-    scene.clear();
-});
 
 // ─── Process Scene Function ──────────────────────────────────────────────────
 function processScene(gltf, loadedLightmaps) {
@@ -499,13 +411,8 @@ const buildHeroTimeline = (midPos, endPos) => {
       end: CAMERA_SCROLL_CONFIG.scrollDistance,
       scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
       pin: true,
-      pinSpacing: true, // Force the spacer to exist
       invalidateOnRefresh: true,
-      anticipatePin: 1,
-       onLeave: () => {
-                // This prevents the page from flickering or jumping
-                ScrollTrigger.refresh(); 
-            }
+      anticipatePin: 1
     },
     onUpdate: () => {
       if (animatedLookTarget) camera.lookAt(animatedLookTarget);
