@@ -338,7 +338,7 @@ async function initScene() {
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
             invalidateOnRefresh: true,
-            anticipatePin: 1
+            anticipatePin: 1,
             onLeave: () => window.dispatchEvent(new Event('resize')),
             onEnterBack: () => window.dispatchEvent(new Event('resize'))
           },
