@@ -63,7 +63,7 @@ const FX_CONFIG = {
 // ─── Renderer ────────────────────────────────────────────────────────────────
 const container = document.querySelector('.hero-bg-3d-animation');
 const heroSection = document.querySelector('.hero-section');
-const nt = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
 const preloaderVideo = document.querySelector('.preloader-player');
 const initialLoaderDisplay = nt
   ? ((window.getComputedStyle(nt).display || '').replace('none', '') || 'flex')
@@ -174,17 +174,19 @@ function waitForPreloaderVideo(callback) {
   }, 4500);
 }
 
-if (loaderElement) {
+// Check for the loader right here to prevent any ReferenceErrors
+const safeLoader = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+
+if (safeLoader) {
   setScrollLocked(true);
   keepPreloaderVisible();
   
-  // FAILSAFE: Force unlock the scroll and hide preloader after 7 seconds, 
-  // no matter what JS errors happen elsewhere on the page.
+  // FAILSAFE: Force unlock the scroll and hide preloader after 7 seconds
   setTimeout(() => {
     setScrollLocked(false);
-    if (loaderElement) {
-        loaderElement.style.display = 'none';
-        loaderElement.style.visibility = 'hidden';
+    if (safeLoader) {
+        safeLoader.style.display = 'none';
+        safeLoader.style.visibility = 'hidden';
     }
   }, 7000);
 }
