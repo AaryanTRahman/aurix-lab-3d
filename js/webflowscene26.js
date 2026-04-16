@@ -288,7 +288,7 @@ async function initScene() {
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
   gltfLoader.load(
-    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test15optimized.glb',
+    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test16optimized.glb',
     (gltf) => {
       const model = gltf.scene;
       processScene(gltf, loadedLightmaps);
