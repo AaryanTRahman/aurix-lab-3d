@@ -71,6 +71,17 @@ function setScrollLocked(locked) {
   const value = locked ? 'hidden' : '';
   document.documentElement.style.overflow = value;
   document.body.style.overflow = value;
+
+  // LENIS FIX: Tell the smooth scroller what we are doing
+  if (window.lenis) {
+    if (locked) {
+      window.lenis.stop();
+    } else {
+      window.lenis.start();
+      window.lenis.resize(); // Force it to recalculate page height
+    }
+  }
+  
 }
 
 function keepPreloaderVisible() {
@@ -325,7 +336,7 @@ async function initScene() {
             start: "top top",
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin: false,
+            pin: true,
             invalidateOnRefresh: true,
             anticipatePin: 1
           },
@@ -342,6 +353,26 @@ async function initScene() {
         ScrollTrigger.refresh();
       };
 
+      // const revealSceneWhenReady = (midPos, endPos) => {
+      //   if (hasRevealedScene) return;
+      //   hasRevealedScene = true;
+      //   if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
+      //   window.scrollTo(0, 0);
+      //   document.documentElement.scrollTop = 0;
+      //   document.body.scrollTop = 0;
+
+      //   requestAnimationFrame(() => {
+      //     buildHeroTimeline(midPos, endPos);
+      //     requestAnimationFrame(() => {
+      //       hidePreloader(() => {
+      //         setScrollLocked(false);
+      //         ScrollTrigger.refresh();
+      //         if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
+      //       });
+      //     });
+      //   });
+      // };
+
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
@@ -350,12 +381,16 @@ async function initScene() {
         document.documentElement.scrollTop = 0;
         document.body.scrollTop = 0;
 
+        // LENIS FIX: Pause Lenis right before we do heavy GSAP math
+        if (window.lenis) window.lenis.stop();
+
         requestAnimationFrame(() => {
           buildHeroTimeline(midPos, endPos);
           requestAnimationFrame(() => {
             hidePreloader(() => {
-              setScrollLocked(false);
+              setScrollLocked(false); // This now restarts Lenis too
               ScrollTrigger.refresh();
+              if (window.lenis) window.lenis.resize(); // Double-check resize
               if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
             });
           });
