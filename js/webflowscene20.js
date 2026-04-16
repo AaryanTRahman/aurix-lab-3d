@@ -183,7 +183,7 @@ const FX_CONFIG = {
 const container = document.querySelector('.hero-bg-3d-animation');
 const heroSection = document.querySelector('.hero-section');
 const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
-const preloaderVideo = document.querySelector('.preloader-video-desktop video');
+const preloaderVideo = document.querySelector('.preloader-wrapper video');
 
 const initialLoaderDisplay = loaderElement
   ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
@@ -304,7 +304,7 @@ function resizeScene() {
   }
 
   // Optional: .refresh() helps recalculate pinned containers on resize
-  .refresh();
+  ScrollTrigger.refresh();
 }
 
 window.addEventListener('resize', resizeScene);
