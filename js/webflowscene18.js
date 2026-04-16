@@ -465,6 +465,8 @@ const buildHeroTimeline = (midPos, endPos) => {
             hidePreloader(() => {
               setScrollLocked(false);
               ScrollTrigger.refresh();
+              // If using Lenis smooth scroll:
+              if (window.lenis) window.lenis.resize();
               if (heroTimeline?.scrollTrigger) {
                 heroTimeline.scrollTrigger.update();
               }
