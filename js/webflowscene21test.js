@@ -325,7 +325,7 @@ async function initScene() {
             start: "top top",
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin: true,
+            pin: false,
             invalidateOnRefresh: true,
             anticipatePin: 1
           },
