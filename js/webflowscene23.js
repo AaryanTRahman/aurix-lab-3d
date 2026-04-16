@@ -69,8 +69,8 @@ function getViewportSize() {
 
 function setScrollLocked(locked) {
   const value = locked ? 'hidden' : '';
-  document.documentElement.style.overflow = value;
-  document.body.style.overflow = value;
+  // document.documentElement.style.overflow = value;
+  // document.body.style.overflow = value;
 
   // LENIS FIX: Tell the smooth scroller what we are doing
   if (window.lenis) {
@@ -376,22 +376,25 @@ async function initScene() {
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
-        if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
+        
+        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+          ScrollTrigger.clearScrollMemory();
+        }
+        
+        // Snap back to top before revealing
         window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-
-        // LENIS FIX: Pause Lenis right before we do heavy GSAP math
-        if (window.lenis) window.lenis.stop();
 
         requestAnimationFrame(() => {
           buildHeroTimeline(midPos, endPos);
+          
           requestAnimationFrame(() => {
             hidePreloader(() => {
-              setScrollLocked(false); // This now restarts Lenis too
+              // 1. Refresh GSAP
               ScrollTrigger.refresh();
-              if (window.lenis) window.lenis.resize(); // Double-check resize
               if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
+              
+              // 2. SECRET TRIGGER: Force Webflow's Lenis to wake up and recalculate height
+              window.dispatchEvent(new Event('resize'));
             });
           });
         });
