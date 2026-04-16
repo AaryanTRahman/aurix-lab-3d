@@ -56,7 +56,7 @@ const FX_CONFIG = {
   bloomThreshold: 0.005,   
   vignetteOffset: 1.2,    
   vignetteDarkness: 1.0,  
-  msaaSamples: 6,  
+  msaaSamples: 2,  
   anisotropy: 8    
 };
 
@@ -535,14 +535,29 @@ composer.addPass(vignettePass);
 composer.addPass(new OutputPass());
 
 // ─── Animation Loop ──────────────────────────────────────────────────────────
+let isVisible = true;
+
+// Create an observer to check if the hero section is actually on screen
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    isVisible = entry.isIntersecting;
+  });
+}, { threshold: 0 }); // Triggers the moment it leaves/enters the screen
+
+if (heroSection) {
+  observer.observe(heroSection);
+}
+
 function animate() {
   requestAnimationFrame(animate);
 
-  if (SHOW_LIGHT_HELPERS) {
-    lightHelpers.forEach(helper => helper.update());
+  // ONLY render the heavy 3D scene if the user is actually looking at it
+  if (isVisible) {
+    if (SHOW_LIGHT_HELPERS) {
+      lightHelpers.forEach(helper => helper.update());
+    }
+    composer.render();
   }
-
-  composer.render();
 }
 
 // ─── Start the Scene ──────────────────────────────────────────────────────────
