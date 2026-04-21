@@ -12,6 +12,10 @@ import ScrollTrigger from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
+ScrollTrigger.config({
+  ignoreMobileResize: true
+});
+
 const LIGHTMAP_CONFIG = {
   'Marble 5': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
   'Roof': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
@@ -200,15 +204,36 @@ const toneMappingEffect = new ToneMappingEffect({
 
 composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
 
+// // --- RESIZE EVENT HANDLING ---
+// function resizeScene() {
+//   const { width, height } = getViewportSize();
+//   camera.aspect = width / height;
+//   camera.updateProjectionMatrix();
+//   // CRUCIAL: 'false' ensures we don't inject inline CSS pixels over 100vh!
+//   renderer.setSize(width, height, false);
+//   if (composer) composer.setSize(width, height, false);
+//   ScrollTrigger.refresh();
+// }
+// window.addEventListener('resize', resizeScene);
+
 // --- RESIZE EVENT HANDLING ---
+let lastWindowWidth = window.innerWidth; // Add this variable
+
 function resizeScene() {
   const { width, height } = getViewportSize();
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  // CRUCIAL: 'false' ensures we don't inject inline CSS pixels over 100vh!
+  
+  // Update 3D canvas size
   renderer.setSize(width, height, false);
   if (composer) composer.setSize(width, height, false);
-  ScrollTrigger.refresh();
+  
+  // ONLY refresh ScrollTrigger if the screen width changes (device rotation).
+  // This physically prevents the violent "teleportation" jump down the page!
+  if (window.innerWidth !== lastWindowWidth) {
+    lastWindowWidth = window.innerWidth;
+    ScrollTrigger.refresh();
+  }
 }
 window.addEventListener('resize', resizeScene);
 
