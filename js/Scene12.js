@@ -1,10 +1,10 @@
-import * as THREE from 'three';
-import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
-import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
-import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
-import gsap from 'gsap';
-import ScrollTrigger from 'gsap/ScrollTrigger';
+import * as THREE from 'https://esm.sh/three@0.164.0';
+import { GLTFLoader } from 'https://esm.sh/three@0.164.0/examples/jsm/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'https://esm.sh/three@0.164.0/examples/jsm/libs/meshopt_decoder.module.js';
+import { RGBELoader } from 'https://esm.sh/three@0.164.0/examples/jsm/loaders/RGBELoader.js';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'https://esm.sh/postprocessing@6.39.1?deps=three@0.164.0';
+import gsap from 'https://esm.sh/gsap@3.12.5';
+import ScrollTrigger from 'https://esm.sh/gsap@3.12.5/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
