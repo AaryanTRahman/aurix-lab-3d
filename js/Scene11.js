@@ -1,58 +1,56 @@
-import * as THREE from 'https://esm.sh/three@0.164.0';
-import { GLTFLoader } from 'https://esm.sh/three@0.164.0/examples/jsm/loaders/GLTFLoader.js';
-import { MeshoptDecoder } from 'https://esm.sh/three@0.164.0/examples/jsm/libs/meshopt_decoder.module.js';
-import { RGBELoader } from 'https://esm.sh/three@0.164.0/examples/jsm/loaders/RGBELoader.js';
-import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'https://esm.sh/postprocessing@6.39.1?deps=three@0.164.0';
-import gsap from 'https://esm.sh/gsap@3.12.5';
-import ScrollTrigger from 'https://esm.sh/gsap@3.12.5/ScrollTrigger';
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+import { RGBELoader } from 'three/addons/loaders/RGBELoader.js';
+import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'postprocessing';
+import gsap from 'gsap';
+import ScrollTrigger from 'gsap/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
 const LIGHTMAP_CONFIG = {
   'Marble 5': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
-  'Roof':     'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
-  'Pillar':   'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
-  'Wall':     'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
+  'Roof': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
+  'Pillar': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
+  'Wall': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
 };
 
 function isMobile() {
   return window.innerWidth <= 768;
 }
 
-// CHANGED: split into desktop/mobile blocks + lookAt start/mid/end
-// Everything else identical to original
 const CAMERA_SCROLL_CONFIG = {
   desktop: {
-    startOffset: new THREE.Vector3(-2.5, -0.8, 10),
-    midOffset:   new THREE.Vector3(-0.2, -0.3,  6),
-    endOffset:   new THREE.Vector3( 0,    0,     4),
+    startOffset: new THREE.Vector3(-2.5,  -0.8, 10),
+    midOffset:   new THREE.Vector3(-0.2,  -0.3,  6),
+    endOffset:   new THREE.Vector3( 0,     0,     4),
   },
   mobile: {
     startOffset: new THREE.Vector3(-2.5, -0.8, 11),
     midOffset:   new THREE.Vector3(-0.5, -0.5,  8.5),
-    endOffset:   new THREE.Vector3( 0,    0,    7),
+    endOffset:   new THREE.Vector3( 0,    0,     7),
   },
   lookAtStart: new THREE.Vector3(1.5, 0, 0),
   lookAtMid:   new THREE.Vector3(0.1, 0, 0),
   lookAtEnd:   new THREE.Vector3(0,   0, 0),
-  fov:             { start: 56, end: 26 },
-  bloom:           { start: 0.1, end: 0.01 },
-  scrollDistance:  "+=1300",
+  fov:   { start: 56, end: 26 },
+  bloom: { start: 0.1, end: 0.01 },
+  scrollDistance: "+=1300",
   scrubSmoothness: 1.5
 };
 
 const LIGHT_INTENSITY_SCALE = 0.001;
 
 const FX_CONFIG = {
-  hdriRotation:    0.0,
-  bloomStrength:   1.5,
-  bloomRadius:     1.0,
-  bloomThreshold:  0,
-  vignetteOffset:  0.2,
-  vignetteDarkness:0.75,
-  anisotropy:      2,
-  renderScale:     1,
-  msaaSamples:     2
+  hdriRotation:     0.0,
+  bloomStrength:    1.5,
+  bloomRadius:      1.0,
+  bloomThreshold:   0,
+  vignetteOffset:   0.2,
+  vignetteDarkness: 0.75,
+  anisotropy:       2,
+  renderScale:      1,
+  msaaSamples:      2
 };
 
 const container      = document.querySelector('.hero-bg-3d-animation');
@@ -69,7 +67,6 @@ function getViewportSize() {
   return { width: Math.max(width, 1), height: Math.max(height, 1) };
 }
 
-// IDENTICAL to original
 function setScrollLocked(locked) {
   if (window.lenis) {
     if (locked) {
@@ -81,7 +78,6 @@ function setScrollLocked(locked) {
   }
 }
 
-// IDENTICAL to original
 function keepPreloaderVisible() {
   if (!loaderElement) return;
   loaderElement.style.display      = initialLoaderDisplay;
@@ -90,7 +86,6 @@ function keepPreloaderVisible() {
   loaderElement.style.pointerEvents = 'auto';
 }
 
-// IDENTICAL to original
 function hidePreloader(onComplete) {
   if (!loaderElement) { onComplete?.(); return; }
   gsap.to(loaderElement, {
@@ -109,15 +104,14 @@ function hidePreloader(onComplete) {
   });
 }
 
-// IDENTICAL to original
 function waitForPreloaderVideo(callback) {
   if (!loaderElement) { callback(); return; }
   let didFinish = false;
   const finish = () => { if (didFinish) return; didFinish = true; callback(); };
 
   const isHidden = () => {
-    const s = window.getComputedStyle(loaderElement);
-    return s.display === 'none' || s.visibility === 'hidden' || parseFloat(s.opacity) === 0;
+    const styles = window.getComputedStyle(loaderElement);
+    return (styles.display === 'none' || styles.visibility === 'hidden' || parseFloat(styles.opacity) === 0);
   };
 
   if (isHidden()) { finish(); return; }
@@ -138,7 +132,7 @@ function waitForPreloaderVideo(callback) {
   window.setTimeout(() => { observer.disconnect(); finish(); }, 4500);
 }
 
-// IDENTICAL to original — THE BULLETPROOF FAILSAFE
+// Bulletproof failsafe
 if (loaderElement) {
   setScrollLocked(true);
   keepPreloaderVisible();
@@ -157,8 +151,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
 let dpr = isMobile() ? Math.min(window.devicePixelRatio, 1.5) : 1;
 dpr = dpr * FX_CONFIG.renderScale;
 renderer.setPixelRatio(dpr);
-// CHANGED: false keeps CSS in control of canvas size (fixes 100vh issue)
-renderer.setSize(initialViewport.width, initialViewport.height, false);
+renderer.setSize(initialViewport.width, initialViewport.height);
 renderer.toneMapping         = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace    = THREE.SRGBColorSpace;
@@ -171,21 +164,9 @@ if (container) {
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a1a);
-const ambientLight = new THREE.AmbientLight(0x404040, 1.0);
-scene.add(ambientLight);
+scene.add(new THREE.AmbientLight(0x404040, 1.0));
 
 const camera = new THREE.PerspectiveCamera(50, initialViewport.width / initialViewport.height, 0.01, 2000);
-
-function resizeScene() {
-  const { width, height } = getViewportSize();
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  // CHANGED: false keeps CSS in control of canvas size (fixes 100vh issue)
-  renderer.setSize(width, height, false);
-  if (composer) composer.setSize(width, height);
-  ScrollTrigger.refresh();
-}
-window.addEventListener('resize', resizeScene);
 
 function processScene(gltf, loadedLightmaps) {
   const model = gltf.scene;
@@ -197,7 +178,7 @@ function processScene(gltf, loadedLightmaps) {
     }
     if (!node.isMesh) return;
 
-    const geo = node.geometry;
+    const geo       = node.geometry;
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     const newMaterials = [];
 
@@ -210,7 +191,7 @@ function processScene(gltf, loadedLightmaps) {
           const targetUV = geo.attributes[attrName];
           if (targetUV) geo.setAttribute('uv1', targetUV);
         }
-        const hdrTexture   = loadedLightmaps[mat.name];
+        const hdrTexture = loadedLightmaps[mat.name];
         hdrTexture.channel = 1;
         if (mat.map) mat.map.channel = 0;
 
@@ -231,8 +212,9 @@ function processScene(gltf, loadedLightmaps) {
       }
     });
 
-    node.material    = Array.isArray(node.material) ? newMaterials : newMaterials[0];
-    const anisoLevel = Math.min(FX_CONFIG.anisotropy, renderer.capabilities.getMaxAnisotropy());
+    node.material = Array.isArray(node.material) ? newMaterials : newMaterials[0];
+    const maxAniso   = renderer.capabilities.getMaxAnisotropy();
+    const anisoLevel = Math.min(FX_CONFIG.anisotropy, maxAniso);
     const finalMats  = Array.isArray(node.material) ? node.material : [node.material];
     finalMats.forEach(m => { if (m.map) m.map.anisotropy = anisoLevel; });
   });
@@ -244,9 +226,9 @@ async function initScene() {
 
   rgbeLoader.load('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k_desaturated.hdr', (envMap) => {
     scene.environmentIntensity  = 0.05;
-    envMap.mapping               = THREE.EquirectangularReflectionMapping;
-    scene.environment            = envMap;
-    scene.environmentRotation.y  = FX_CONFIG.hdriRotation;
+    envMap.mapping              = THREE.EquirectangularReflectionMapping;
+    scene.environment           = envMap;
+    scene.environmentRotation.y = FX_CONFIG.hdriRotation;
   });
 
   const loadedLightmaps = {};
@@ -285,7 +267,7 @@ async function initScene() {
         if (node.isSpotLight) {
           const targetPos = new THREE.Vector3(0, 0, -1);
           node.localToWorld(targetPos);
-          if (node.target && node.target.parent) node.target.parent.remove(node.target);
+          if (node.target?.parent) node.target.parent.remove(node.target);
           node.target = new THREE.Object3D();
           node.target.position.copy(targetPos);
           scene.add(node.target);
@@ -309,44 +291,37 @@ async function initScene() {
         resetToStartFrame();
         const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
 
-        // IDENTICAL to original ScrollTrigger config
         heroTimeline = gsap.timeline({
           scrollTrigger: {
-            trigger:             heroSection || '.hero-section',
-            start:               'top top',
-            end:                 CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub:               CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin:                 true,
-            invalidateOnRefresh: true,
-            anticipatePin:       1,
-            onLeave:     () => window.dispatchEvent(new Event('resize')),
-            onEnterBack: () => window.dispatchEvent(new Event('resize')),
+            trigger:       heroSection || ".hero-section",
+            start:         "top top",
+            end:           CAMERA_SCROLL_CONFIG.scrollDistance,
+            scrub:         CAMERA_SCROLL_CONFIG.scrubSmoothness,
+            pin:           true,
+            anticipatePin: 1,
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
 
-        // CHANGED: keyframes instead of two separate .to() calls (fixes scroll jump at end)
         heroTimeline.to(camera.position, {
           keyframes: [
-            { x: midPos.x, y: midPos.y, z: midPos.z, ease: 'power1.in',  duration: 1 },
-            { x: endPos.x, y: endPos.y, z: endPos.z, ease: 'power1.out', duration: 1 },
+            { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in",  duration: 1 },
+            { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
           ]
         }, 0);
-        heroTimeline.to(camera, { fov: fovEnd, ease: 'power2.inOut', duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
-        // CHANGED: keyframes for lookAt too
+        heroTimeline.to(camera, { fov: fovEnd, ease: "power2.inOut", duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
         heroTimeline.to(animatedLookTarget, {
           keyframes: [
-            { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: 'power2.inOut', duration: 1 },
-            { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: 'power2.inOut', duration: 1 },
+            { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power2.inOut", duration: 1 },
+            { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power2.inOut", duration: 1 },
           ]
         }, 0);
-        heroTimeline.to(bloomEffect,                    { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: 'power2.inOut', duration: 2 }, 0);
-        heroTimeline.to('.scroll-indicator-wrapper',    { opacity: 0, duration: 0.2 }, 0);
+        heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
+        heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
 
         ScrollTrigger.refresh();
       };
 
-      // IDENTICAL to original
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
@@ -371,21 +346,20 @@ async function initScene() {
         logo.getWorldPosition(logoPos);
         const mobile = isMobile();
 
-        // CHANGED: pull from config block instead of inline
-        const offsets  = mobile ? CAMERA_SCROLL_CONFIG.mobile : CAMERA_SCROLL_CONFIG.desktop;
-        startPos       = logoPos.clone().add(offsets.startOffset);
-        const midPos   = logoPos.clone().add(offsets.midOffset);
-        const endPos   = logoPos.clone().add(offsets.endOffset);
+        const offsets = mobile ? CAMERA_SCROLL_CONFIG.mobile : CAMERA_SCROLL_CONFIG.desktop;
+        startPos     = logoPos.clone().add(offsets.startOffset);
+        const midPos = logoPos.clone().add(offsets.midOffset);
+        const endPos = logoPos.clone().add(offsets.endOffset);
 
-        lookAtStart        = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtStart);
-        lookAtMid          = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtMid);
-        lookAtEnd          = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtEnd);
+        lookAtStart = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtStart);
+        lookAtMid   = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtMid);
+        lookAtEnd   = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtEnd);
+
         animatedLookTarget = lookAtStart.clone();
-        camera.fov         = mobile ? 70 : CAMERA_SCROLL_CONFIG.fov.start;
+        camera.fov = mobile ? 70 : CAMERA_SCROLL_CONFIG.fov.start;
 
         resetToStartFrame();
         composer.render();
-        // IDENTICAL to original
         waitForPreloaderVideo(() => revealSceneWhenReady(midPos, endPos));
       } else {
         hidePreloader(() => setScrollLocked(false));
@@ -399,7 +373,6 @@ async function initScene() {
   );
 }
 
-// CHANGED: postprocessing library (pmndrs instead of Three.js built-in)
 const composer = new EffectComposer(renderer, {
   multisampling:   FX_CONFIG.msaaSamples,
   frameBufferType: THREE.HalfFloatType
@@ -424,13 +397,22 @@ const toneMappingEffect = new ToneMappingEffect({
 
 composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
 
+function resizeScene() {
+  const { width, height } = getViewportSize();
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  renderer.setSize(width, height);
+  if (composer) composer.setSize(width, height);
+  ScrollTrigger.refresh();
+}
+window.addEventListener('resize', resizeScene);
+
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
   composer.render(clock.getDelta());
 }
 
-// IDENTICAL to original boot pattern
 let hasStarted = false;
 async function startScene() {
   if (hasStarted) return;
