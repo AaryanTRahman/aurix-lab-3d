@@ -43,7 +43,7 @@ const CAMERA_SCROLL_CONFIG = {
   lookAtEnd:   new THREE.Vector3(0,   0, 0),
   fov:   { start: 56, end: 26 },
   bloom: { start: 0.1, end: 0.01 },
-  scrollDistance: "+=7800",
+  scrollDistance: "+=780",
   scrubSmoothness: 1.5
 };
 
