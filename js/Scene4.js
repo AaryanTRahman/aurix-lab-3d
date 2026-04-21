@@ -10,9 +10,9 @@ gsap.registerPlugin(ScrollTrigger);
 
 const LIGHTMAP_CONFIG = {
   'Marble 5': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
-  'Roof': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
-  'Pillar': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
-  'Wall': 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
+  'Roof':     'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
+  'Pillar':   'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
+  'Wall':     'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.hdr',
 };
 
 function isMobile() {
@@ -21,9 +21,9 @@ function isMobile() {
 
 const CAMERA_SCROLL_CONFIG = {
   desktop: {
-    startOffset: new THREE.Vector3(-2.5,  -0.8, 10),
-    midOffset:   new THREE.Vector3(-0.2,  -0.3,  6),
-    endOffset:   new THREE.Vector3( 0,     0,     4),
+    startOffset: new THREE.Vector3(-2.5, -0.8, 10),
+    midOffset:   new THREE.Vector3(-0.2, -0.3,  6),
+    endOffset:   new THREE.Vector3( 0,    0,     4),
   },
   mobile: {
     startOffset: new THREE.Vector3(-2.5, -0.8, 11),
@@ -35,7 +35,7 @@ const CAMERA_SCROLL_CONFIG = {
   lookAtEnd:   new THREE.Vector3(0,   0, 0),
   fov:   { start: 56, end: 26 },
   bloom: { start: 0.1, end: 0.01 },
-  scrollDistance: "+=1300",
+  scrollDistance:  "+=1300",
   scrubSmoothness: 1.5
 };
 
@@ -53,7 +53,7 @@ const FX_CONFIG = {
   msaaSamples:     2
 };
 
-// ── WEBFLOW DOM REFS ──────────────────────────────────────────────────
+// ── WEBFLOW DOM REFS ─────────────────────────────────────────────────
 const container      = document.querySelector('.hero-bg-3d-animation');
 const heroSection    = document.querySelector('.hero-section');
 const loaderElement  = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
@@ -68,7 +68,7 @@ function getViewportSize() {
   return { width: Math.max(width, 1), height: Math.max(height, 1) };
 }
 
-// ── WEBFLOW SCROLL LOCK / LENIS ───────────────────────────────────────
+// ── WEBFLOW SCROLL LOCK / LENIS ──────────────────────────────────────
 function setScrollLocked(locked) {
   if (window.lenis) {
     if (locked) {
@@ -134,7 +134,8 @@ function waitForPreloaderVideo(callback) {
   window.setTimeout(() => { observer.disconnect(); finish(); }, 4500);
 }
 
-// Bulletproof failsafe
+// ── BULLETPROOF FAILSAFE ─────────────────────────────────────────────
+// Lock scroll immediately — must happen before anything else
 if (loaderElement) {
   setScrollLocked(true);
   keepPreloaderVisible();
@@ -154,6 +155,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
 let dpr = isMobile() ? Math.min(window.devicePixelRatio, 1.5) : 1;
 dpr = dpr * FX_CONFIG.renderScale;
 renderer.setPixelRatio(dpr);
+// false = do NOT set canvas style width/height inline — lets CSS 100% rule win
 renderer.setSize(initialViewport.width, initialViewport.height, false);
 renderer.toneMapping         = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.0;
@@ -165,14 +167,51 @@ if (container) {
   console.error("Could not find '.hero-bg-3d-animation' div in Webflow!");
 }
 
-// ── SCENE / CAMERA ────────────────────────────────────────────────────
+// ── SCENE / CAMERA ───────────────────────────────────────────────────
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x1a1a1a);
 scene.add(new THREE.AmbientLight(0x404040, 1.0));
 
 const camera = new THREE.PerspectiveCamera(50, initialViewport.width / initialViewport.height, 0.01, 2000);
 
-// ── MATERIAL PROCESSING ───────────────────────────────────────────────
+// ── POST-PROCESSING ──────────────────────────────────────────────────
+const composer = new EffectComposer(renderer, {
+  multisampling:   FX_CONFIG.msaaSamples,
+  frameBufferType: THREE.HalfFloatType
+});
+composer.addPass(new RenderPass(scene, camera));
+
+const bloomEffect = new BloomEffect({
+  intensity:          FX_CONFIG.bloomStrength,
+  mipmapBlur:         true,
+  luminanceThreshold: FX_CONFIG.bloomThreshold,
+  resolutionScale:    0.5
+});
+
+const vignetteEffect = new VignetteEffect({
+  offset:   FX_CONFIG.vignetteOffset,
+  darkness: FX_CONFIG.vignetteDarkness
+});
+
+const toneMappingEffect = new ToneMappingEffect({
+  mode: ToneMappingMode.ACES_FILMIC
+});
+
+composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
+
+// ── RESIZE ───────────────────────────────────────────────────────────
+function resizeScene() {
+  const { width, height } = getViewportSize();
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  // false = keep CSS in control of canvas display size
+  renderer.setSize(width, height, false);
+  if (composer) composer.setSize(width, height);
+  ScrollTrigger.refresh();
+}
+window.addEventListener('resize', resizeScene);
+
+// ── MATERIAL PROCESSING ──────────────────────────────────────────────
 function processScene(gltf, loadedLightmaps) {
   const model = gltf.scene;
   model.traverse((node) => {
@@ -224,7 +263,7 @@ function processScene(gltf, loadedLightmaps) {
   });
 }
 
-// ── MAIN INIT ─────────────────────────────────────────────────────────
+// ── MAIN INIT ────────────────────────────────────────────────────────
 async function initScene() {
   if (!container) return;
   const rgbeLoader = new RGBELoader();
@@ -298,13 +337,13 @@ async function initScene() {
 
         heroTimeline = gsap.timeline({
           scrollTrigger: {
-            trigger:       heroSection || '.hero-section',
-            start:         'top top',
-            end:           CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub:         CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin:           true,
-            anticipatePin: 1,
-            invalidateOnRefresh: true,  
+            trigger:          heroSection || '.hero-section',
+            start:            'top top',
+            end:              CAMERA_SCROLL_CONFIG.scrollDistance,
+            scrub:            CAMERA_SCROLL_CONFIG.scrubSmoothness,
+            pin:              true,
+            anticipatePin:    1,
+            invalidateOnRefresh: true,
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
@@ -324,24 +363,28 @@ async function initScene() {
         }, 0);
         heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: 'power2.inOut', duration: 2 }, 0);
         heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
-
-        ScrollTrigger.refresh();
       };
 
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
+
+        // Force scroll to absolute top before anything else
         if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
         window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;  // ADD THIS — force scroll top explicitly
-        document.body.scrollTop = 0;             // ADD THIS — belt and braces
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (window.lenis) window.lenis.scrollTo(0, { immediate: true });
+
         requestAnimationFrame(() => {
           buildHeroTimeline(midPos, endPos);
           requestAnimationFrame(() => {
             hidePreloader(() => {
+              // Only unlock scroll AFTER preloader is gone and timeline is built
               setScrollLocked(false);
               ScrollTrigger.refresh();
               if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
+              // Tell Lenis to recalculate page height for the newly pinned section
               window.dispatchEvent(new Event('resize'));
             });
           });
@@ -380,43 +423,7 @@ async function initScene() {
   );
 }
 
-// ── POST-PROCESSING ───────────────────────────────────────────────────
-const composer = new EffectComposer(renderer, {
-  multisampling:   FX_CONFIG.msaaSamples,
-  frameBufferType: THREE.HalfFloatType
-});
-composer.addPass(new RenderPass(scene, camera));
-
-const bloomEffect = new BloomEffect({
-  intensity:          FX_CONFIG.bloomStrength,
-  mipmapBlur:         true,
-  luminanceThreshold: FX_CONFIG.bloomThreshold,
-  resolutionScale:    0.5
-});
-
-const vignetteEffect = new VignetteEffect({
-  offset:   FX_CONFIG.vignetteOffset,
-  darkness: FX_CONFIG.vignetteDarkness
-});
-
-const toneMappingEffect = new ToneMappingEffect({
-  mode: ToneMappingMode.ACES_FILMIC
-});
-
-composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
-
-// ── RESIZE ────────────────────────────────────────────────────────────
-function resizeScene() {
-  const { width, height } = getViewportSize();
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height, false);
-  if (composer) composer.setSize(width, height);
-  ScrollTrigger.refresh();
-}
-window.addEventListener('resize', resizeScene);
-
-// ── RENDER LOOP ───────────────────────────────────────────────────────
+// ── RENDER LOOP ──────────────────────────────────────────────────────
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
