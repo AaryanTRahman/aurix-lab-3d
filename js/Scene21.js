@@ -414,24 +414,24 @@ async function initScene() {
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
-            anticipatePin: 1,
-            fastScrollEnd: true, // Prevents the browser from getting 'lost' at the end of the pin
+            anticipatePin: 1
+            // fastScrollEnd: true, // Prevents the browser from getting 'lost' at the end of the pin
             
-            // THE FIX:
-            // We use delayedCall so the refresh happens AFTER the unpinning 
-            // visual transition, preventing the "jump" snap.
-            onLeave: () => {
-              gsap.delayedCall(0.1, () => {
-                  ScrollTrigger.refresh();
-                  if (window.lenis) window.lenis.resize();
-              });
-            },
-            onEnterBack: () => {
-              gsap.delayedCall(0.1, () => {
-                  ScrollTrigger.refresh();
-                  if (window.lenis) window.lenis.resize();
-              });
-            }
+            // // THE FIX:
+            // // We use delayedCall so the refresh happens AFTER the unpinning 
+            // // visual transition, preventing the "jump" snap.
+            // onLeave: () => {
+            //   gsap.delayedCall(0.1, () => {
+            //       ScrollTrigger.refresh();
+            //       if (window.lenis) window.lenis.resize();
+            //   });
+            // },
+            // onEnterBack: () => {
+            //   gsap.delayedCall(0.1, () => {
+            //       ScrollTrigger.refresh();
+            //       if (window.lenis) window.lenis.resize();
+            //   });
+            // }
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
