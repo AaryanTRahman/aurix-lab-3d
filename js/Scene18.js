@@ -372,11 +372,17 @@ async function initScene() {
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
-            // CRUCIAL: Webflow/Lenis hooks preserved from old code!
-            // invalidateOnRefresh: true,
-            anticipatePin: 1
-            // onLeave: () => window.dispatchEvent(new Event('resize')),
-            // onEnterBack: () => window.dispatchEvent(new Event('resize'))
+            anticipatePin: 1,
+            // THE FIX: We keep the refresh, but call it manually instead of dispatching a resize event.
+            // This tells GSAP to recalculate the page height without forcing a browser layout jump.
+            onLeave: () => {
+              ScrollTrigger.refresh();
+              if (window.lenis) window.lenis.resize(); // Tells Lenis the page height has changed
+            },
+            onEnterBack: () => {
+              ScrollTrigger.refresh();
+              if (window.lenis) window.lenis.resize();
+            }
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
