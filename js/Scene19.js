@@ -373,16 +373,9 @@ async function initScene() {
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
             anticipatePin: 1,
-            // THE FIX: We keep the refresh, but call it manually instead of dispatching a resize event.
-            // This tells GSAP to recalculate the page height without forcing a browser layout jump.
-            onLeave: () => {
-              ScrollTrigger.refresh();
-              if (window.lenis) window.lenis.resize(); // Tells Lenis the page height has changed
-            },
-            onEnterBack: () => {
-              ScrollTrigger.refresh();
-              if (window.lenis) window.lenis.resize();
-            }
+            // Just use this. It will automatically update the page calculations 
+            // when the pin finishes without needing any manual resize hacks.
+            invalidateOnRefresh: true 
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
