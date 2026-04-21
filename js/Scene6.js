@@ -1,10 +1,13 @@
+--- START OF FILE Scene5.txt ---
+
 import * as THREE from 'https://esm.sh/three@0.164.0';
 import { GLTFLoader } from 'https://esm.sh/three@0.164.0/examples/jsm/loaders/GLTFLoader.js';
 import { MeshoptDecoder } from 'https://esm.sh/three@0.164.0/examples/jsm/libs/meshopt_decoder.module.js';
 import { RGBELoader } from 'https://esm.sh/three@0.164.0/examples/jsm/loaders/RGBELoader.js';
 import { EffectComposer, RenderPass, EffectPass, BloomEffect, VignetteEffect, ToneMappingEffect, ToneMappingMode } from 'https://esm.sh/postprocessing@6.39.1?deps=three@0.164.0';
 import gsap from 'https://esm.sh/gsap@3.12.5';
-import ScrollTrigger from 'https://esm.sh/gsap@3.12.5/ScrollTrigger';
+// CHANGED: Fixed named import for ScrollTrigger (prevents silently failing and autoplaying)
+import { ScrollTrigger } from 'https://esm.sh/gsap@3.12.5/ScrollTrigger';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -19,8 +22,6 @@ function isMobile() {
   return window.innerWidth <= 768;
 }
 
-// CHANGED: split into desktop/mobile blocks + lookAt start/mid/end
-// Everything else identical to original
 const CAMERA_SCROLL_CONFIG = {
   desktop: {
     startOffset: new THREE.Vector3(-2.5, -0.8, 10),
@@ -69,7 +70,6 @@ function getViewportSize() {
   return { width: Math.max(width, 1), height: Math.max(height, 1) };
 }
 
-// IDENTICAL to original
 function setScrollLocked(locked) {
   if (window.lenis) {
     if (locked) {
@@ -81,7 +81,6 @@ function setScrollLocked(locked) {
   }
 }
 
-// IDENTICAL to original
 function keepPreloaderVisible() {
   if (!loaderElement) return;
   loaderElement.style.display      = initialLoaderDisplay;
@@ -90,7 +89,6 @@ function keepPreloaderVisible() {
   loaderElement.style.pointerEvents = 'auto';
 }
 
-// IDENTICAL to original
 function hidePreloader(onComplete) {
   if (!loaderElement) { onComplete?.(); return; }
   gsap.to(loaderElement, {
@@ -109,7 +107,6 @@ function hidePreloader(onComplete) {
   });
 }
 
-// IDENTICAL to original
 function waitForPreloaderVideo(callback) {
   if (!loaderElement) { callback(); return; }
   let didFinish = false;
@@ -138,7 +135,6 @@ function waitForPreloaderVideo(callback) {
   window.setTimeout(() => { observer.disconnect(); finish(); }, 4500);
 }
 
-// IDENTICAL to original — THE BULLETPROOF FAILSAFE
 if (loaderElement) {
   setScrollLocked(true);
   keepPreloaderVisible();
@@ -157,8 +153,13 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
 let dpr = isMobile() ? Math.min(window.devicePixelRatio, 1.5) : 1;
 dpr = dpr * FX_CONFIG.renderScale;
 renderer.setPixelRatio(dpr);
-// CHANGED: false keeps CSS in control of canvas size (fixes 100vh issue)
+
+// CHANGED: Fixed the CSS canvas layout issue so it conforms to 100vh in Webflow correctly
 renderer.setSize(initialViewport.width, initialViewport.height, false);
+renderer.domElement.style.width = '100%';
+renderer.domElement.style.height = '100%';
+renderer.domElement.style.display = 'block';
+
 renderer.toneMapping         = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace    = THREE.SRGBColorSpace;
@@ -180,9 +181,15 @@ function resizeScene() {
   const { width, height } = getViewportSize();
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  // CHANGED: false keeps CSS in control of canvas size (fixes 100vh issue)
+  
+  // CHANGED: Explicitly disable style override for both renderer and composer
   renderer.setSize(width, height, false);
-  if (composer) composer.setSize(width, height);
+  if (composer) composer.setSize(width, height, false);
+
+  // Enforce 100% just in case window resize attempts to overwrite it with fixed pixels
+  renderer.domElement.style.width = '100%';
+  renderer.domElement.style.height = '100%';
+
   ScrollTrigger.refresh();
 }
 window.addEventListener('resize', resizeScene);
@@ -309,7 +316,6 @@ async function initScene() {
         resetToStartFrame();
         const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
 
-        // IDENTICAL to original ScrollTrigger config
         heroTimeline = gsap.timeline({
           scrollTrigger: {
             trigger:             heroSection || '.hero-section',
@@ -325,7 +331,6 @@ async function initScene() {
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
 
-        // CHANGED: keyframes instead of two separate .to() calls (fixes scroll jump at end)
         heroTimeline.to(camera.position, {
           keyframes: [
             { x: midPos.x, y: midPos.y, z: midPos.z, ease: 'power1.in',  duration: 1 },
@@ -333,7 +338,6 @@ async function initScene() {
           ]
         }, 0);
         heroTimeline.to(camera, { fov: fovEnd, ease: 'power2.inOut', duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
-        // CHANGED: keyframes for lookAt too
         heroTimeline.to(animatedLookTarget, {
           keyframes: [
             { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: 'power2.inOut', duration: 1 },
@@ -342,25 +346,28 @@ async function initScene() {
         }, 0);
         heroTimeline.to(bloomEffect,                    { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: 'power2.inOut', duration: 2 }, 0);
         heroTimeline.to('.scroll-indicator-wrapper',    { opacity: 0, duration: 0.2 }, 0);
-
-        ScrollTrigger.refresh();
       };
 
-      // IDENTICAL to original
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
+        
         if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
         window.scrollTo(0, 0);
-        requestAnimationFrame(() => {
-          buildHeroTimeline(midPos, endPos);
+        
+        // Ensure Lenis natively scrolls back up avoiding initial layout jumps
+        if (window.lenis) window.lenis.scrollTo(0, { immediate: true });
+
+        // CHANGED: We now wait for the preloader to fully hide AND scroll to unlock before 
+        // building the Timeline. This stops ScrollTrigger from incorrectly evaluating the viewport
+        // as having 0 scrollable height, which caused it to skip straight to the end.
+        hidePreloader(() => {
+          setScrollLocked(false);
           requestAnimationFrame(() => {
-            hidePreloader(() => {
-              setScrollLocked(false);
-              ScrollTrigger.refresh();
-              if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
-              window.dispatchEvent(new Event('resize'));
-            });
+            buildHeroTimeline(midPos, endPos);
+            ScrollTrigger.refresh();
+            if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
+            window.dispatchEvent(new Event('resize'));
           });
         });
       };
@@ -371,7 +378,6 @@ async function initScene() {
         logo.getWorldPosition(logoPos);
         const mobile = isMobile();
 
-        // CHANGED: pull from config block instead of inline
         const offsets  = mobile ? CAMERA_SCROLL_CONFIG.mobile : CAMERA_SCROLL_CONFIG.desktop;
         startPos       = logoPos.clone().add(offsets.startOffset);
         const midPos   = logoPos.clone().add(offsets.midOffset);
@@ -385,7 +391,6 @@ async function initScene() {
 
         resetToStartFrame();
         composer.render();
-        // IDENTICAL to original
         waitForPreloaderVideo(() => revealSceneWhenReady(midPos, endPos));
       } else {
         hidePreloader(() => setScrollLocked(false));
@@ -399,7 +404,6 @@ async function initScene() {
   );
 }
 
-// CHANGED: postprocessing library (pmndrs instead of Three.js built-in)
 const composer = new EffectComposer(renderer, {
   multisampling:   FX_CONFIG.msaaSamples,
   frameBufferType: THREE.HalfFloatType
@@ -430,7 +434,6 @@ function animate() {
   composer.render(clock.getDelta());
 }
 
-// IDENTICAL to original boot pattern
 let hasStarted = false;
 async function startScene() {
   if (hasStarted) return;
