@@ -402,7 +402,7 @@ async function initScene() {
 
       //   ScrollTrigger.refresh();
       // };
-      const buildHeroTimeline = (midPos, endPos) => {
+    const buildHeroTimeline = (midPos, endPos) => {
         heroTimeline?.kill();
         resetToStartFrame();
         const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
@@ -414,30 +414,23 @@ async function initScene() {
             end: CAMERA_SCROLL_CONFIG.scrollDistance,
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
-            anticipatePin: 1
+            anticipatePin: 1,
+            
+            // CRUCIAL: 'invalidateOnRefresh' MUST BE GONE to prevent the camera snap!
+            
+            // BRINGING THIS BACK: This is what fixes your scroll wheel.
+            // Since 'invalidateOnRefresh' is gone, this will no longer break the camera!
+            onLeave: () => {
+              window.dispatchEvent(new Event('resize'));
+            },
+            onEnterBack: () => {
+              window.dispatchEvent(new Event('resize'));
+            }
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
-        // --- THE GHOST TRIGGER ---
-        // This runs completely independently of the camera animation.
-        // Its ONLY job is to wake up Lenis so your scroll wheel doesn't stop working.
-        ScrollTrigger.create({
-          trigger: heroSection || ".hero-section",
-          start: "top top",
-          end: CAMERA_SCROLL_CONFIG.scrollDistance,
-          onLeave: () => {
-            setTimeout(() => {
-              if (window.lenis) window.lenis.resize();
-            }, 100);
-          },
-          onEnterBack: () => {
-            setTimeout(() => {
-              if (window.lenis) window.lenis.resize();
-            }, 100);
-          }
-        });
       
-        // ... (Rest of your timeline code remains exactly as it was)
+        // ... (Keep your keyframes animations exactly as they are here)
         heroTimeline.to(camera.position, {
           keyframes: [
             { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
@@ -453,6 +446,8 @@ async function initScene() {
         }, 0);
         heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
         heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
+      
+        ScrollTrigger.refresh();
       };
 
       // --- WEBFLOW REVEAL LOGIC (Preserved from old code) ---
