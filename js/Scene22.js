@@ -475,7 +475,8 @@ async function initScene() {
               
               // Unlock Lenis/Scroll
               setScrollLocked(false);
-              
+              document.body.style.overflow = 'auto';
+              document.documentElement.style.overflow = 'auto';  
               // Secret trigger: Force Webflow's Lenis to recalculate height
               // window.dispatchEvent(new Event('resize'));
             });
