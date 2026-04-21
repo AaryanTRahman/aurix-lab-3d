@@ -328,16 +328,35 @@ async function initScene() {
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
-        if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
+      
+        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+          ScrollTrigger.clearScrollMemory();
+        }
+        
+        // 1. Aggressively reset all scroll memory (Fixes the instant auto-play)
         window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        if (window.lenis) { window.lenis.scrollTo(0, { immediate: true }); }
+      
         requestAnimationFrame(() => {
           buildHeroTimeline(midPos, endPos);
+          
           requestAnimationFrame(() => {
             hidePreloader(() => {
-              setScrollLocked(false);
+              // 2. Refresh GSAP *first* so it physically adds the 1300px spacer to the DOM
               ScrollTrigger.refresh();
               if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
-              window.dispatchEvent(new Event('resize'));
+              
+              // 3. Now unlock scrolling
+              setScrollLocked(false);
+              
+              // 4. Force Lenis and Webflow to remeasure the page after a tiny delay
+              // This guarantees the scrollbar physically gets the 1300px space
+              setTimeout(() => {
+                window.dispatchEvent(new Event('resize'));
+                if (window.lenis) window.lenis.resize();
+              }, 100);
             });
           });
         });
@@ -405,7 +424,7 @@ function resizeScene() {
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
   renderer.setSize(width, height, false);
-  if (composer) composer.setSize(width, height);
+  if (composer) composer.setSize(width, height, false);
   ScrollTrigger.refresh();
 }
 window.addEventListener('resize', resizeScene);
