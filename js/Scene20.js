@@ -360,11 +360,53 @@ async function initScene() {
       };
 
       // --- THE GSAP TIMELINE (New Animations + Old Scroll Config) ---
+      // const buildHeroTimeline = (midPos, endPos) => {
+      //   heroTimeline?.kill();
+      //   resetToStartFrame();
+      //   const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
+
+      //   heroTimeline = gsap.timeline({
+      //     scrollTrigger: {
+      //       trigger: heroSection || ".hero-section",
+      //       start: "top top",
+      //       end: CAMERA_SCROLL_CONFIG.scrollDistance,
+      //       scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
+      //       pin: true,
+      //       anticipatePin: 1,
+      //       // Just use this. It will automatically update the page calculations 
+      //       // when the pin finishes without needing any manual resize hacks.
+      //       invalidateOnRefresh: true 
+      //     },
+      //     onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
+      //   });
+
+      //   // New keyframe animations
+      //   heroTimeline.to(camera.position, {
+      //     keyframes: [
+      //       { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
+      //       { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
+      //     ]
+      //   }, 0);
+        
+      //   heroTimeline.to(camera, { fov: fovEnd, ease: "power2.inOut", duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
+        
+      //   heroTimeline.to(animatedLookTarget, {
+      //     keyframes: [
+      //       { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power2.inOut", duration: 1 },
+      //       { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power2.inOut", duration: 1 },
+      //     ]
+      //   }, 0);
+        
+      //   heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
+      //   heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
+
+      //   ScrollTrigger.refresh();
+      // };
       const buildHeroTimeline = (midPos, endPos) => {
         heroTimeline?.kill();
         resetToStartFrame();
         const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
-
+      
         heroTimeline = gsap.timeline({
           scrollTrigger: {
             trigger: heroSection || ".hero-section",
@@ -373,34 +415,43 @@ async function initScene() {
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
             anticipatePin: 1,
-            // Just use this. It will automatically update the page calculations 
-            // when the pin finishes without needing any manual resize hacks.
-            invalidateOnRefresh: true 
+            fastScrollEnd: true, // Prevents the browser from getting 'lost' at the end of the pin
+            
+            // THE FIX:
+            // We use delayedCall so the refresh happens AFTER the unpinning 
+            // visual transition, preventing the "jump" snap.
+            onLeave: () => {
+              gsap.delayedCall(0.1, () => {
+                  ScrollTrigger.refresh();
+                  if (window.lenis) window.lenis.resize();
+              });
+            },
+            onEnterBack: () => {
+              gsap.delayedCall(0.1, () => {
+                  ScrollTrigger.refresh();
+                  if (window.lenis) window.lenis.resize();
+              });
+            }
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
-
-        // New keyframe animations
+      
+        // ... (Rest of your timeline code remains exactly as it was)
         heroTimeline.to(camera.position, {
           keyframes: [
             { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
             { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
           ]
         }, 0);
-        
         heroTimeline.to(camera, { fov: fovEnd, ease: "power2.inOut", duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
-        
         heroTimeline.to(animatedLookTarget, {
           keyframes: [
             { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power2.inOut", duration: 1 },
             { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power2.inOut", duration: 1 },
           ]
         }, 0);
-        
         heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
         heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
-
-        ScrollTrigger.refresh();
       };
 
       // --- WEBFLOW REVEAL LOGIC (Preserved from old code) ---
