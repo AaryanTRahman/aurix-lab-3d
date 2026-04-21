@@ -348,10 +348,10 @@ async function initScene() {
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
             // CRUCIAL: Webflow/Lenis hooks preserved from old code!
-            invalidateOnRefresh: true,
-            anticipatePin: 1,
-            onLeave: () => window.dispatchEvent(new Event('resize')),
-            onEnterBack: () => window.dispatchEvent(new Event('resize'))
+            // invalidateOnRefresh: true,
+            anticipatePin: 1
+            // onLeave: () => window.dispatchEvent(new Event('resize')),
+            // onEnterBack: () => window.dispatchEvent(new Event('resize'))
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
@@ -402,7 +402,7 @@ async function initScene() {
               setScrollLocked(false);
               
               // Secret trigger: Force Webflow's Lenis to recalculate height
-              window.dispatchEvent(new Event('resize'));
+              // window.dispatchEvent(new Event('resize'));
             });
           });
         });
