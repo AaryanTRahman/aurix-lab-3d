@@ -415,25 +415,26 @@ async function initScene() {
             scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin: true,
             anticipatePin: 1
-            // fastScrollEnd: true, // Prevents the browser from getting 'lost' at the end of the pin
-            
-            // // THE FIX:
-            // // We use delayedCall so the refresh happens AFTER the unpinning 
-            // // visual transition, preventing the "jump" snap.
-            // onLeave: () => {
-            //   gsap.delayedCall(0.1, () => {
-            //       ScrollTrigger.refresh();
-            //       if (window.lenis) window.lenis.resize();
-            //   });
-            // },
-            // onEnterBack: () => {
-            //   gsap.delayedCall(0.1, () => {
-            //       ScrollTrigger.refresh();
-            //       if (window.lenis) window.lenis.resize();
-            //   });
-            // }
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
+        });
+        // --- THE GHOST TRIGGER ---
+        // This runs completely independently of the camera animation.
+        // Its ONLY job is to wake up Lenis so your scroll wheel doesn't stop working.
+        ScrollTrigger.create({
+          trigger: heroSection || ".hero-section",
+          start: "top top",
+          end: CAMERA_SCROLL_CONFIG.scrollDistance,
+          onLeave: () => {
+            setTimeout(() => {
+              if (window.lenis) window.lenis.resize();
+            }, 100);
+          },
+          onEnterBack: () => {
+            setTimeout(() => {
+              if (window.lenis) window.lenis.resize();
+            }, 100);
+          }
         });
       
         // ... (Rest of your timeline code remains exactly as it was)
