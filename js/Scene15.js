@@ -53,36 +53,36 @@ const FX_CONFIG = {
   msaaSamples:      2
 };
 
-const container      = document.querySelector('.hero-bg-3d-animation');
-const heroSection    = document.querySelector('.hero-section');
-const loaderElement  = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
+// --- WEBFLOW DOM ELEMENTS ---
+const container = document.querySelector('.hero-bg-3d-animation');
+const heroSection = document.querySelector('.hero-section');
+const loaderElement = document.querySelector('.preloader-wrapper') || document.getElementById('custom-loader');
 const preloaderVideo = document.querySelector('.preloader-player');
-const initialLoaderDisplay = loaderElement
-  ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex')
-  : 'flex';
+const initialLoaderDisplay = loaderElement ? ((window.getComputedStyle(loaderElement).display || '').replace('none', '') || 'flex') : 'flex';
 
 function getViewportSize() {
-  const width  = container?.clientWidth  || window.innerWidth;
+  const width = container?.clientWidth || window.innerWidth;
   const height = container?.clientHeight || window.innerHeight;
   return { width: Math.max(width, 1), height: Math.max(height, 1) };
 }
 
+// --- WEBFLOW / LENIS SCROLL LOCKING ---
 function setScrollLocked(locked) {
   if (window.lenis) {
     if (locked) {
       window.lenis.stop();
     } else {
       window.lenis.start();
-      window.lenis.resize();
+      window.lenis.resize(); // Force it to recalculate page height
     }
   }
 }
 
 function keepPreloaderVisible() {
   if (!loaderElement) return;
-  loaderElement.style.display      = initialLoaderDisplay;
-  loaderElement.style.opacity      = '1';
-  loaderElement.style.visibility   = 'visible';
+  loaderElement.style.display = initialLoaderDisplay;
+  loaderElement.style.opacity = '1';
+  loaderElement.style.visibility = 'visible';
   loaderElement.style.pointerEvents = 'auto';
 }
 
@@ -93,11 +93,11 @@ function hidePreloader(onComplete) {
     duration: 0.6,
     ease: 'power2.out',
     onStart: () => {
-      loaderElement.style.visibility   = 'visible';
+      loaderElement.style.visibility = 'visible';
       loaderElement.style.pointerEvents = 'none';
     },
     onComplete: () => {
-      loaderElement.style.display    = 'none';
+      loaderElement.style.display = 'none';
       loaderElement.style.visibility = 'hidden';
       onComplete?.();
     }
@@ -111,7 +111,7 @@ function waitForPreloaderVideo(callback) {
 
   const isHidden = () => {
     const styles = window.getComputedStyle(loaderElement);
-    return (styles.display === 'none' || styles.visibility === 'hidden' || parseFloat(styles.opacity) === 0);
+    return (styles.display === 'none' || styles.visibility === 'hidden' || Number.parseFloat(styles.opacity) === 0);
   };
 
   if (isHidden()) { finish(); return; }
@@ -128,33 +128,36 @@ function waitForPreloaderVideo(callback) {
       finish();
     }
   });
+
   observer.observe(loaderElement, { attributes: true, attributeFilter: ['class', 'style'] });
   window.setTimeout(() => { observer.disconnect(); finish(); }, 4500);
 }
 
-// Bulletproof failsafe
+// BULLETPROOF FAILSAFE
 if (loaderElement) {
   setScrollLocked(true);
   keepPreloaderVisible();
   setTimeout(() => {
     setScrollLocked(false);
     if (loaderElement) {
-      loaderElement.style.display    = 'none';
+      loaderElement.style.display = 'none';
       loaderElement.style.visibility = 'hidden';
     }
   }, 7000);
 }
 
+// --- INITIALIZE RENDERER (New Performance Config) ---
 const initialViewport = getViewportSize();
 const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
 
 let dpr = isMobile() ? Math.min(window.devicePixelRatio, 1.5) : 1;
 dpr = dpr * FX_CONFIG.renderScale;
 renderer.setPixelRatio(dpr);
+// CRUCIAL: 'false' forces Three.js NOT to override Webflow's CSS vh!
 renderer.setSize(initialViewport.width, initialViewport.height, false);
-renderer.toneMapping         = THREE.NoToneMapping;
+renderer.toneMapping = THREE.NoToneMapping; // Handled by postprocessing ToneMappingEffect
 renderer.toneMappingExposure = 1.0;
-renderer.outputColorSpace    = THREE.SRGBColorSpace;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
 
 if (container) {
   container.appendChild(renderer.domElement);
@@ -168,6 +171,44 @@ scene.add(new THREE.AmbientLight(0x404040, 1.0));
 
 const camera = new THREE.PerspectiveCamera(50, initialViewport.width / initialViewport.height, 0.01, 2000);
 
+// --- NEW POST-PROCESSING PIPELINE ---
+const composer = new EffectComposer(renderer, {
+  multisampling: FX_CONFIG.msaaSamples,
+  frameBufferType: THREE.HalfFloatType
+});
+composer.addPass(new RenderPass(scene, camera));
+
+const bloomEffect = new BloomEffect({
+  intensity: FX_CONFIG.bloomStrength,
+  mipmapBlur: true,
+  luminanceThreshold: FX_CONFIG.bloomThreshold,
+  resolutionScale: 0.5
+});
+
+const vignetteEffect = new VignetteEffect({
+  offset: FX_CONFIG.vignetteOffset,
+  darkness: FX_CONFIG.vignetteDarkness
+});
+
+const toneMappingEffect = new ToneMappingEffect({
+  mode: ToneMappingMode.ACES_FILMIC
+});
+
+composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
+
+// --- RESIZE EVENT HANDLING ---
+function resizeScene() {
+  const { width, height } = getViewportSize();
+  camera.aspect = width / height;
+  camera.updateProjectionMatrix();
+  // CRUCIAL: 'false' ensures we don't inject inline CSS pixels over 100vh!
+  renderer.setSize(width, height, false);
+  if (composer) composer.setSize(width, height, false);
+  ScrollTrigger.refresh();
+}
+window.addEventListener('resize', resizeScene);
+
+// --- SCENE PROCESSING ---
 function processScene(gltf, loadedLightmaps) {
   const model = gltf.scene;
   model.traverse((node) => {
@@ -178,7 +219,7 @@ function processScene(gltf, loadedLightmaps) {
     }
     if (!node.isMesh) return;
 
-    const geo       = node.geometry;
+    const geo = node.geometry;
     const materials = Array.isArray(node.material) ? node.material : [node.material];
     const newMaterials = [];
 
@@ -196,15 +237,15 @@ function processScene(gltf, loadedLightmaps) {
         if (mat.map) mat.map.channel = 0;
 
         const newMat = new THREE.MeshBasicMaterial({
-          name:              mat.name,
-          color:             mat.map ? new THREE.Color(0xffffff) : mat.color,
-          map:               mat.map,
-          lightMap:          hdrTexture,
+          name: mat.name,
+          color: mat.map ? new THREE.Color(0xffffff) : mat.color,
+          map: mat.map,
+          lightMap: hdrTexture,
           lightMapIntensity: 1.5,
         });
         newMat.transparent = mat.transparent;
-        newMat.opacity     = mat.opacity;
-        newMat.alphaTest   = mat.alphaTest;
+        newMat.opacity = mat.opacity;
+        newMat.alphaTest = mat.alphaTest;
         newMaterials.push(newMat);
         mat.dispose();
       } else {
@@ -213,27 +254,30 @@ function processScene(gltf, loadedLightmaps) {
     });
 
     node.material = Array.isArray(node.material) ? newMaterials : newMaterials[0];
-    const maxAniso   = renderer.capabilities.getMaxAnisotropy();
+    const maxAniso = renderer.capabilities.getMaxAnisotropy();
     const anisoLevel = Math.min(FX_CONFIG.anisotropy, maxAniso);
-    const finalMats  = Array.isArray(node.material) ? node.material : [node.material];
+    const finalMats = Array.isArray(node.material) ? node.material : [node.material];
     finalMats.forEach(m => { if (m.map) m.map.anisotropy = anisoLevel; });
   });
 }
 
+// --- INIT SCENE & ASSETS ---
 async function initScene() {
   if (!container) return;
   const rgbeLoader = new RGBELoader();
 
+  // Load Environment Map
   rgbeLoader.load('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k_desaturated.hdr', (envMap) => {
-    scene.environmentIntensity  = 0.05;
-    envMap.mapping              = THREE.EquirectangularReflectionMapping;
-    scene.environment           = envMap;
+    scene.environmentIntensity = 0.05;
+    envMap.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = envMap;
     scene.environmentRotation.y = FX_CONFIG.hdriRotation;
   });
 
+  // Cached HDR Loading (Performance Update)
   const loadedLightmaps = {};
   try {
-    const uniqueURLs   = [...new Set(Object.values(LIGHTMAP_CONFIG))];
+    const uniqueURLs = [...new Set(Object.values(LIGHTMAP_CONFIG))];
     const textureCache = {};
     await Promise.all(uniqueURLs.map(async (url) => {
       const tex = await rgbeLoader.loadAsync(url);
@@ -256,7 +300,7 @@ async function initScene() {
       const model = gltf.scene;
       processScene(gltf, loadedLightmaps);
 
-      const box    = new THREE.Box3().setFromObject(model);
+      const box = new THREE.Box3().setFromObject(model);
       const centre = new THREE.Vector3();
       box.getCenter(centre);
       model.position.sub(centre);
@@ -282,10 +326,11 @@ async function initScene() {
         animatedLookTarget.copy(lookAtStart);
         camera.position.copy(startPos);
         camera.updateProjectionMatrix();
-        bloomEffect.intensity = CAMERA_SCROLL_CONFIG.bloom.start;
+        bloomEffect.intensity = CAMERA_SCROLL_CONFIG.bloom.start; // New bloom logic
         camera.lookAt(animatedLookTarget);
       };
 
+      // --- THE GSAP TIMELINE (New Animations + Old Scroll Config) ---
       const buildHeroTimeline = (midPos, endPos) => {
         heroTimeline?.kill();
         resetToStartFrame();
@@ -293,83 +338,81 @@ async function initScene() {
 
         heroTimeline = gsap.timeline({
           scrollTrigger: {
-            trigger:       heroSection || ".hero-section",
-            start:         "top top",
-            end:           CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub:         CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin:           true,
+            trigger: heroSection || ".hero-section",
+            start: "top top",
+            end: CAMERA_SCROLL_CONFIG.scrollDistance,
+            scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
+            pin: true,
+            // CRUCIAL: Webflow/Lenis hooks preserved from old code!
+            invalidateOnRefresh: true,
             anticipatePin: 1,
-            invalidateOnRefresh: true, // Re-added
-            onLeave: () => window.dispatchEvent(new Event('resize')), // Re-added
-            onEnterBack: () => window.dispatchEvent(new Event('resize')) // Re-added
+            onLeave: () => window.dispatchEvent(new Event('resize')),
+            onEnterBack: () => window.dispatchEvent(new Event('resize'))
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
 
+        // New keyframe animations
         heroTimeline.to(camera.position, {
           keyframes: [
-            { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in",  duration: 1 },
+            { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
             { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
           ]
         }, 0);
+        
         heroTimeline.to(camera, { fov: fovEnd, ease: "power2.inOut", duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
+        
         heroTimeline.to(animatedLookTarget, {
           keyframes: [
             { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power2.inOut", duration: 1 },
             { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power2.inOut", duration: 1 },
           ]
         }, 0);
+        
         heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
         heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
 
         ScrollTrigger.refresh();
       };
 
+      // --- WEBFLOW REVEAL LOGIC (Preserved from old code) ---
       const revealSceneWhenReady = (midPos, endPos) => {
         if (hasRevealedScene) return;
         hasRevealedScene = true;
-      
+        
         if (typeof ScrollTrigger.clearScrollMemory === 'function') {
           ScrollTrigger.clearScrollMemory();
         }
         
-        // 1. Aggressively reset all scroll memory (Fixes the instant auto-play)
         window.scrollTo(0, 0);
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-        if (window.lenis) { window.lenis.scrollTo(0, { immediate: true }); }
-      
+
         requestAnimationFrame(() => {
           buildHeroTimeline(midPos, endPos);
           
           requestAnimationFrame(() => {
             hidePreloader(() => {
-              // 2. Refresh GSAP *first* so it physically adds the 1300px spacer to the DOM
               ScrollTrigger.refresh();
               if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
               
-              // 3. Now unlock scrolling
+              // Unlock Lenis/Scroll
               setScrollLocked(false);
               
-              // 4. Force Lenis and Webflow to remeasure the page after a tiny delay
-              // This guarantees the scrollbar physically gets the 1300px space
-              setTimeout(() => {
-                window.dispatchEvent(new Event('resize'));
-                if (window.lenis) window.lenis.resize();
-              }, 100);
+              // Secret trigger: Force Webflow's Lenis to recalculate height
+              window.dispatchEvent(new Event('resize'));
             });
           });
         });
       };
 
-      const logo = model.getObjectByName('Center');
-      if (logo) {
+      // Find the new target "Center"
+      const targetObj = model.getObjectByName('Center');
+      if (targetObj) {
         const logoPos = new THREE.Vector3();
-        logo.getWorldPosition(logoPos);
+        targetObj.getWorldPosition(logoPos);
         const mobile = isMobile();
 
         const offsets = mobile ? CAMERA_SCROLL_CONFIG.mobile : CAMERA_SCROLL_CONFIG.desktop;
-        startPos     = logoPos.clone().add(offsets.startOffset);
+        startPos = logoPos.clone().add(offsets.startOffset);
         const midPos = logoPos.clone().add(offsets.midOffset);
         const endPos = logoPos.clone().add(offsets.endOffset);
 
@@ -381,9 +424,11 @@ async function initScene() {
         camera.fov = mobile ? 70 : CAMERA_SCROLL_CONFIG.fov.start;
 
         resetToStartFrame();
-        composer.render();
+        // Render 1 frame before reveal using the new composer
+        composer.render(0); 
         waitForPreloaderVideo(() => revealSceneWhenReady(midPos, endPos));
       } else {
+        console.warn("Object 'Center' not found in model!");
         hidePreloader(() => setScrollLocked(false));
       }
     },
@@ -395,44 +440,11 @@ async function initScene() {
   );
 }
 
-const composer = new EffectComposer(renderer, {
-  multisampling:   FX_CONFIG.msaaSamples,
-  frameBufferType: THREE.HalfFloatType
-});
-composer.addPass(new RenderPass(scene, camera));
-
-const bloomEffect = new BloomEffect({
-  intensity:          FX_CONFIG.bloomStrength,
-  mipmapBlur:         true,
-  luminanceThreshold: FX_CONFIG.bloomThreshold,
-  resolutionScale:    0.5
-});
-
-const vignetteEffect = new VignetteEffect({
-  offset:   FX_CONFIG.vignetteOffset,
-  darkness: FX_CONFIG.vignetteDarkness
-});
-
-const toneMappingEffect = new ToneMappingEffect({
-  mode: ToneMappingMode.ACES_FILMIC
-});
-
-composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
-
-function resizeScene() {
-  const { width, height } = getViewportSize();
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-  renderer.setSize(width, height, false);
-  if (composer) composer.setSize(width, height, false);
-  ScrollTrigger.refresh();
-}
-window.addEventListener('resize', resizeScene);
-
+// --- RENDER LOOP ---
 const clock = new THREE.Clock();
 function animate() {
   requestAnimationFrame(animate);
-  composer.render(clock.getDelta());
+  composer.render(clock.getDelta()); // Pass delta for postprocessing library
 }
 
 let hasStarted = false;
