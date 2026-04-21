@@ -154,7 +154,7 @@ const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
 let dpr = isMobile() ? Math.min(window.devicePixelRatio, 1.5) : 1;
 dpr = dpr * FX_CONFIG.renderScale;
 renderer.setPixelRatio(dpr);
-renderer.setSize(initialViewport.width, initialViewport.height);
+renderer.setSize(initialViewport.width, initialViewport.height, false);
 renderer.toneMapping         = THREE.NoToneMapping;
 renderer.toneMappingExposure = 1.0;
 renderer.outputColorSpace    = THREE.SRGBColorSpace;
@@ -304,6 +304,7 @@ async function initScene() {
             scrub:         CAMERA_SCROLL_CONFIG.scrubSmoothness,
             pin:           true,
             anticipatePin: 1,
+            invalidateOnRefresh: true,  
           },
           onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
         });
@@ -332,6 +333,8 @@ async function initScene() {
         hasRevealedScene = true;
         if (typeof ScrollTrigger.clearScrollMemory === 'function') ScrollTrigger.clearScrollMemory();
         window.scrollTo(0, 0);
+        document.documentElement.scrollTop = 0;  // ADD THIS — force scroll top explicitly
+        document.body.scrollTop = 0;             // ADD THIS — belt and braces
         requestAnimationFrame(() => {
           buildHeroTimeline(midPos, endPos);
           requestAnimationFrame(() => {
@@ -407,7 +410,7 @@ function resizeScene() {
   const { width, height } = getViewportSize();
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
-  renderer.setSize(width, height);
+  renderer.setSize(width, height, false);
   if (composer) composer.setSize(width, height);
   ScrollTrigger.refresh();
 }
