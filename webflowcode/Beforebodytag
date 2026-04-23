@@ -725,14 +725,12 @@ function initParticleSection() {
   }
 
   function setParticleVideoState() {
+    // Use the computed `currentSlideIndex` (updated elsewhere) as the
+    // authoritative active slide. This reduces flakiness from relying on
+    // computed opacity thresholds during rapid timeline scrubbing.
     particleSlides.forEach((slide, index) => {
-      const styles = window.getComputedStyle(slide);
-      const opacity = Number.parseFloat(styles.opacity || '0');
-      const slideShouldPlay = particleSectionActive
-        && sliderFullyVisible
-        && styles.display !== 'none'
-        && styles.visibility !== 'hidden'
-        && opacity > 0.35;
+      const isVisibleInLayout = slide.style.display !== 'none' && slide.style.visibility !== 'hidden';
+      const shouldPlay = particleSectionActive && sliderFullyVisible && isVisibleInLayout && (index === currentSlideIndex);
 
       slide.querySelectorAll('video').forEach((video) => {
         video.muted = true;
@@ -743,7 +741,7 @@ function initParticleSection() {
         video.setAttribute('playsinline', '');
         video.setAttribute('muted', '');
         video.setAttribute('autoplay', '');
-        applyParticleVideoState(video, slideShouldPlay);
+        applyParticleVideoState(video, shouldPlay);
       });
     });
   }
