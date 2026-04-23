@@ -649,6 +649,9 @@ function initParticleSection() {
     if (state.timeoutId) {
       window.clearTimeout(state.timeoutId);
     }
+    if (state.intervalId) {
+      window.clearInterval(state.intervalId);
+    }
     if (state.canPlayHandler) {
       video.removeEventListener('canplay', state.canPlayHandler);
     }
@@ -670,9 +673,15 @@ function initParticleSection() {
     video.setAttribute('autoplay', '');
 
     const attemptPlay = () => {
+      if (window.__aurixDebugVideo) {
+        try { console.debug('[aurix-video] attemptPlay', { src: video.currentSrc || video.src, readyState: video.readyState }); } catch (e) {}
+      }
       const playPromise = video.play();
       if (playPromise && typeof playPromise.catch === 'function') {
-        playPromise.catch(() => {
+        playPromise.catch((err) => {
+          if (window.__aurixDebugVideo) {
+            try { console.warn('[aurix-video] play() rejected', err, { src: video.currentSrc || video.src }); } catch (e) {}
+          }
           const canPlayHandler = () => {
             clearParticleVideoRetry(video);
             attemptPlay();
@@ -681,7 +690,14 @@ function initParticleSection() {
             clearParticleVideoRetry(video);
             attemptPlay();
           }, 400);
-          particleVideoRetryState.set(video, { canPlayHandler, timeoutId });
+          // fallback interval to repeatedly try playing in case canplay isn't emitted
+          const intervalId = window.setInterval(() => {
+            try {
+              const p = video.play();
+              if (p && typeof p.catch === 'function') p.catch(() => {});
+            } catch (e) {}
+          }, 300);
+          particleVideoRetryState.set(video, { canPlayHandler, timeoutId, intervalId });
           video.addEventListener('canplay', canPlayHandler, { once: true });
           if (video.readyState < 2 && typeof video.load === 'function') {
             video.load();
@@ -706,6 +722,17 @@ function initParticleSection() {
   }
 
   function applyParticleVideoState(video, shouldPlay) {
+    if (window.__aurixDebugVideo) {
+      try {
+        console.debug('[aurix-video] applyParticleVideoState', {
+          shouldPlay,
+          paused: video.paused,
+          readyState: video.readyState,
+          src: video.currentSrc || video.src || null,
+          currentSlideIndex
+        });
+      } catch (e) {}
+    }
     const lastAppliedState = particleVideoAppliedState.get(video);
     if (lastAppliedState === shouldPlay) return;
     particleVideoAppliedState.set(video, shouldPlay);
@@ -725,12 +752,14 @@ function initParticleSection() {
   }
 
   function setParticleVideoState() {
-    // Use the computed `currentSlideIndex` (updated elsewhere) as the
-    // authoritative active slide. This reduces flakiness from relying on
-    // computed opacity thresholds during rapid timeline scrubbing.
     particleSlides.forEach((slide, index) => {
-      const isVisibleInLayout = slide.style.display !== 'none' && slide.style.visibility !== 'hidden';
-      const shouldPlay = particleSectionActive && sliderFullyVisible && isVisibleInLayout && (index === currentSlideIndex);
+      const styles = window.getComputedStyle(slide);
+      const opacity = Number.parseFloat(styles.opacity || '0');
+      const slideShouldPlay = particleSectionActive
+        && sliderFullyVisible
+        && styles.display !== 'none'
+        && styles.visibility !== 'hidden'
+        && opacity > 0.35;
 
       slide.querySelectorAll('video').forEach((video) => {
         video.muted = true;
@@ -741,7 +770,7 @@ function initParticleSection() {
         video.setAttribute('playsinline', '');
         video.setAttribute('muted', '');
         video.setAttribute('autoplay', '');
-        applyParticleVideoState(video, shouldPlay);
+        applyParticleVideoState(video, slideShouldPlay);
       });
     });
   }
