@@ -829,15 +829,25 @@ function initParticleSection() {
   const slide3 = getSlideElements(2);
   const slide4 = getSlideElements(3);
 
-  function getParticleActiveSlideIndex(progress) {
-    if (progress >= 0.90) return 3;
-    if (progress >= 0.66) return 2;
-    if (progress >= 0.42) return 1;
-    return 0;
+  function getVisibleParticleSlideIndex() {
+    let bestIndex = 0;
+    let bestOpacity = -1;
+
+    particleSlides.forEach((slide, index) => {
+      const styles = window.getComputedStyle(slide);
+      if (styles.visibility === 'hidden' || styles.display === 'none') return;
+      const opacity = Number.parseFloat(styles.opacity || '0');
+      if (opacity > bestOpacity) {
+        bestOpacity = opacity;
+        bestIndex = index;
+      }
+    });
+
+    return bestIndex;
   }
 
-  function updateParticlePlaybackFromProgress(progress) {
-    const nextSlideIndex = getParticleActiveSlideIndex(progress);
+  function updateParticlePlaybackFromVisibility() {
+    const nextSlideIndex = getVisibleParticleSlideIndex();
     if (currentSlideIndex !== nextSlideIndex) {
       currentSlideIndex = nextSlideIndex;
       updateProgressBar(nextSlideIndex);
@@ -879,17 +889,17 @@ function initParticleSection() {
       scrub: true,
       onEnter: () => {
         particleSectionActive = true;
-        updateParticlePlaybackFromProgress(mainTl.progress());
+        updateParticlePlaybackFromVisibility();
       },
       onLeave: () => { particleSectionActive = false; setParticleVideoState(0, false); },
       onEnterBack: () => {
         particleSectionActive = true;
-        updateParticlePlaybackFromProgress(mainTl.progress());
+        updateParticlePlaybackFromVisibility();
       },
       onLeaveBack: () => { particleSectionActive = false; setParticleVideoState(0, false); }
     },
     onUpdate: () => {
-      updateParticlePlaybackFromProgress(mainTl.progress());
+      updateParticlePlaybackFromVisibility();
     }
   });
 
@@ -933,7 +943,7 @@ function initParticleSection() {
       opacity: 1, visibility: 'visible',
       onStart: () => {
         sliderFullyVisible = true;
-        updateParticlePlaybackFromProgress(mainTl.progress());
+        updateParticlePlaybackFromVisibility();
       },
       onReverseComplete: () => { sliderFullyVisible = false; setParticleVideoState(0, false); }
     }, 0.12);
