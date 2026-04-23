@@ -704,12 +704,7 @@ function initParticleSection() {
     }
   }
 
-  let currentlyPlayingIndex = -1;
-  let isCurrentlyPlayingState = false;
-
   function setParticleVideoState(activeIndex = 0, shouldPlay = false) {
-    if (currentlyPlayingIndex === activeIndex && isCurrentlyPlayingState === shouldPlay) return;
-
     particleSlides.forEach((slide, index) => {
       slide.querySelectorAll('video').forEach((video) => {
         
@@ -726,13 +721,15 @@ function initParticleSection() {
           clearParticleVideoRetry(video);
           if (!video.paused) video.pause(); 
         } else {
+          if (video.ended) {
+            try {
+              video.currentTime = 0;
+            } catch (error) {}
+          }
           playActiveParticleVideo(video);
         }
       });
     });
-
-    currentlyPlayingIndex = activeIndex;
-    isCurrentlyPlayingState = shouldPlay;
   }
   function syncParticleVideoPlayback(activeIndex = currentSlideIndex) {
     if (!particleSlides[activeIndex]) return;
@@ -822,6 +819,22 @@ function initParticleSection() {
   const slide3 = getSlideElements(2);
   const slide4 = getSlideElements(3);
 
+  function getParticleActiveSlideIndex(progress) {
+    if (progress >= 0.90) return 3;
+    if (progress >= 0.66) return 2;
+    if (progress >= 0.42) return 1;
+    return 0;
+  }
+
+  function updateParticlePlaybackFromProgress(progress) {
+    const nextSlideIndex = getParticleActiveSlideIndex(progress);
+    if (currentSlideIndex !== nextSlideIndex) {
+      currentSlideIndex = nextSlideIndex;
+      updateProgressBar(nextSlideIndex);
+    }
+    syncParticleVideoPlayback(nextSlideIndex);
+  }
+
   function addSlideToTimeline(tl, el, inPos, slideIndex) {
     if (!el) return;
     const outPos = inPos + 0.20; // hold window before next slide starts
@@ -834,11 +847,6 @@ function initParticleSection() {
       .to(el.headings, { opacity: 1, x: 0, duration: 0.06, stagger: 0.015, ease: 'power2.out' }, inPos + 0.09)
       .to(el.desc, { opacity: 1, y: 0, duration: 0.06, ease: 'power2.out' }, inPos + 0.12)
       .to(el.btn, { opacity: 1, y: 0, duration: 0.06, ease: 'power2.out' }, inPos + 0.15)
-      .add(() => {
-        currentSlideIndex = slideIndex;
-        updateProgressBar(slideIndex);
-        syncParticleVideoPlayback(slideIndex);
-      }, inPos + 0.01)
 
     if (slideIndex < 3) {
       tl.to(el.btn, { opacity: 0, y: 50, duration: 0.04, ease: 'power2.in' }, outPos)
@@ -859,10 +867,19 @@ function initParticleSection() {
       end: '+=500%',
       pin: true,
       scrub: true,
-      onEnter: () => { particleSectionActive = true; syncParticleVideoPlayback(); },
+      onEnter: () => {
+        particleSectionActive = true;
+        updateParticlePlaybackFromProgress(mainTl.progress());
+      },
       onLeave: () => { particleSectionActive = false; setParticleVideoState(0, false); },
-      onEnterBack: () => { particleSectionActive = true; syncParticleVideoPlayback(); },
+      onEnterBack: () => {
+        particleSectionActive = true;
+        updateParticlePlaybackFromProgress(mainTl.progress());
+      },
       onLeaveBack: () => { particleSectionActive = false; setParticleVideoState(0, false); }
+    },
+    onUpdate: () => {
+      updateParticlePlaybackFromProgress(mainTl.progress());
     }
   });
 
@@ -904,7 +921,10 @@ function initParticleSection() {
     .set(starBgBox, { visibility: 'hidden' }, 0.27)
     .set(slider, {
       opacity: 1, visibility: 'visible',
-      onStart: () => { sliderFullyVisible = true; syncParticleVideoPlayback(0); },
+      onStart: () => {
+        sliderFullyVisible = true;
+        updateParticlePlaybackFromProgress(mainTl.progress());
+      },
       onReverseComplete: () => { sliderFullyVisible = false; setParticleVideoState(0, false); }
     }, 0.12);
 
