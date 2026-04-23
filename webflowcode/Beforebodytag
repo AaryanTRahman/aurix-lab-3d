@@ -56,6 +56,17 @@ document.addEventListener('DOMContentLoaded', function() {
   ScrollTrigger.config({ ignoreMobileResize: true,
       limitCallbacks: true });
 
+  function safeScrollTriggerRefresh(force = false) {
+    if (typeof ScrollTrigger === 'undefined') return false;
+    const currentY = window.scrollY || window.pageYOffset || 0;
+    const safeZone = Math.max(window.innerHeight * 0.5, 240);
+    if (!force && currentY > safeZone) {
+      return false;
+    }
+    ScrollTrigger.refresh();
+    return true;
+  }
+
   if (lenis) {
     lenis.on('scroll', ScrollTrigger.update);
     gsap.ticker.add((time) => {
@@ -64,7 +75,7 @@ document.addEventListener('DOMContentLoaded', function() {
     gsap.ticker.lagSmoothing(0);
   }
   window.addEventListener('load', function() {
-    ScrollTrigger.refresh();
+    safeScrollTriggerRefresh();
   });
 (function() {
   let hasCompletedPreloaderTransition = false;
@@ -194,9 +205,7 @@ document.addEventListener('DOMContentLoaded', function() {
       lenis.start();
       lenis.resize();
     }
-    if (typeof ScrollTrigger !== 'undefined') {
-      ScrollTrigger.refresh();
-    }
+    safeScrollTriggerRefresh(true);
   }
 
   lockScrolling();
@@ -405,7 +414,7 @@ function startSequentialSectionInit() {
     })
   ]).then(() => {
     setTimeout(() => {
-      ScrollTrigger.refresh();
+      safeScrollTriggerRefresh();
     }, 300);
   });
 }
@@ -790,7 +799,6 @@ function initParticleSection() {
       end: '+=500%',
       pin: true,
       scrub: true,
-      invalidateOnRefresh: true,
       onEnter: () => { particleSectionActive = true; syncParticleVideoPlayback(); },
       onLeave: () => { particleSectionActive = false; setParticleVideoState(0, false); },
       onEnterBack: () => { particleSectionActive = true; syncParticleVideoPlayback(); },
