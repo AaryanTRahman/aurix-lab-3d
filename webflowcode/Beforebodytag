@@ -5,6 +5,18 @@
 <script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <script>
 (function() {
+  const earlyPreloaderVideo = document.querySelector('.preloader-wrapper video, .preloader-player');
+  if (!earlyPreloaderVideo) return;
+  earlyPreloaderVideo.autoplay = false;
+  earlyPreloaderVideo.loop = false;
+  earlyPreloaderVideo.removeAttribute('autoplay');
+  earlyPreloaderVideo.pause();
+  try {
+    earlyPreloaderVideo.currentTime = 0;
+  } catch (error) {}
+})();
+
+(function() {
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'auto';
   }
@@ -57,6 +69,8 @@ document.addEventListener('DOMContentLoaded', function() {
 (function() {
   let hasCompletedPreloaderTransition = false;
   let lockedScrollY = 0;
+  let scrollLockActive = false;
+  let videoPlaybackFailsafe = null;
 
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
   const preloaderVideoDesktop = document.querySelector('.preloader-wrapper video, .preloader-player');
@@ -78,7 +92,8 @@ document.addEventListener('DOMContentLoaded', function() {
   const preloaderState = window.__aurixPreloaderState = window.__aurixPreloaderState || {
     pageReady: false,
     sceneReady: false,
-    videoStarted: false
+    videoStarted: false,
+    videoPlaying: false
   };
 
   if (heroIconBtn) {
@@ -103,10 +118,23 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   }
 
+  function keepLockedScrollPosition() {
+    if (!scrollLockActive) return;
+    const currentY = window.scrollY || window.pageYOffset || 0;
+    if (currentY !== lockedScrollY) {
+      window.scrollTo(0, lockedScrollY);
+    }
+  }
+
   function lockScrolling() {
     lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    scrollLockActive = true;
     document.documentElement.style.overflow = 'hidden';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.documentElement.style.touchAction = 'none';
     document.body.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.touchAction = 'none';
     document.body.style.position = 'fixed';
     document.body.style.top = `-${lockedScrollY}px`;
     document.body.style.left = '0';
@@ -118,11 +146,18 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('wheel', preventLockedScroll, { passive: false });
     window.addEventListener('touchmove', preventLockedScroll, { passive: false });
     window.addEventListener('keydown', preventLockedKeys, false);
+    window.addEventListener('scroll', keepLockedScrollPosition, { passive: true });
+    keepLockedScrollPosition();
   }
 
   function enableScrolling() {
+    scrollLockActive = false;
     document.documentElement.style.overflow = '';
+    document.documentElement.style.overscrollBehavior = '';
+    document.documentElement.style.touchAction = '';
     document.body.style.overflow = '';
+    document.body.style.overscrollBehavior = '';
+    document.body.style.touchAction = '';
     document.body.style.position = '';
     document.body.style.top = '';
     document.body.style.left = '';
@@ -131,6 +166,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.removeEventListener('wheel', preventLockedScroll, { passive: false });
     window.removeEventListener('touchmove', preventLockedScroll, { passive: false });
     window.removeEventListener('keydown', preventLockedKeys, false);
+    window.removeEventListener('scroll', keepLockedScrollPosition, { passive: true });
     window.scrollTo(0, lockedScrollY);
     if (lenis) {
       lenis.start();
@@ -176,7 +212,60 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function finalizePreloaderVideoState() {
+    window.clearTimeout(videoPlaybackFailsafe);
     transitionToHero();
+  }
+
+  function scheduleVideoPlaybackFailsafe() {
+    window.clearTimeout(videoPlaybackFailsafe);
+    const durationMs = (preloaderVideoDesktop && Number.isFinite(preloaderVideoDesktop.duration) && preloaderVideoDesktop.duration > 0)
+      ? Math.ceil(preloaderVideoDesktop.duration * 1000) + 1500
+      : 12000;
+    videoPlaybackFailsafe = window.setTimeout(() => {
+      if (!hasCompletedPreloaderTransition) {
+        finalizePreloaderVideoState();
+      }
+    }, durationMs);
+  }
+
+  function waitForPlayableVideoAndStart() {
+    if (!preloaderVideoDesktop || hasCompletedPreloaderTransition) return;
+    const startPlayback = () => {
+      if (hasCompletedPreloaderTransition) return;
+      const playPromise = preloaderVideoDesktop.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.then(() => {
+          preloaderState.videoPlaying = true;
+          scheduleVideoPlaybackFailsafe();
+        }).catch(() => {
+          preloaderState.videoStarted = false;
+          preloaderState.videoPlaying = false;
+          window.setTimeout(tryStartPreloaderVideo, 250);
+        });
+        return;
+      }
+      preloaderState.videoPlaying = !preloaderVideoDesktop.paused;
+      if (preloaderState.videoPlaying) {
+        scheduleVideoPlaybackFailsafe();
+      } else {
+        preloaderState.videoStarted = false;
+        window.setTimeout(tryStartPreloaderVideo, 250);
+      }
+    };
+
+    if (preloaderVideoDesktop.readyState >= 2) {
+      startPlayback();
+      return;
+    }
+
+    const handleCanPlay = () => {
+      preloaderVideoDesktop.removeEventListener('canplay', handleCanPlay);
+      startPlayback();
+    };
+    preloaderVideoDesktop.addEventListener('canplay', handleCanPlay, { once: true });
+    if (typeof preloaderVideoDesktop.load === 'function') {
+      preloaderVideoDesktop.load();
+    }
   }
 
   function tryStartPreloaderVideo() {
@@ -184,6 +273,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!preloaderState.pageReady || !preloaderState.sceneReady) return;
 
     preloaderState.videoStarted = true;
+    preloaderState.videoPlaying = false;
     try {
       preloaderVideoDesktop.pause();
       preloaderVideoDesktop.currentTime = 0;
@@ -194,13 +284,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (typeof preloaderVideoDesktop.load === 'function' && preloaderVideoDesktop.readyState < 2) {
       preloaderVideoDesktop.load();
     }
-
-    const playPromise = preloaderVideoDesktop.play();
-    if (playPromise && typeof playPromise.catch === 'function') {
-      playPromise.catch(function() {
-        finalizePreloaderVideoState();
-      });
-    }
+    waitForPlayableVideoAndStart();
   }
 
   function markPreloaderPageReady() {
@@ -233,7 +317,7 @@ document.addEventListener('DOMContentLoaded', function() {
       try {
         preloaderVideoDesktop.pause();
         if (preloaderVideoDesktop.readyState >= 1) {
-          preloaderVideoDesktop.currentTime = 0.001;
+          preloaderVideoDesktop.currentTime = 0;
         }
       } catch (error) {
         console.warn('Could not freeze preloader first frame', error);
@@ -247,7 +331,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     preloaderVideoDesktop.addEventListener('ended', finalizePreloaderVideoState, { once: true });
-    preloaderVideoDesktop.addEventListener('error', finalizePreloaderVideoState, { once: true });
+    preloaderVideoDesktop.addEventListener('play', () => {
+      if (!preloaderState.pageReady || !preloaderState.sceneReady) {
+        freezeOnFirstFrame();
+      }
+    });
   }
 
   setTimeout(() => {
