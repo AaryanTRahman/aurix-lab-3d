@@ -68,9 +68,9 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 (function() {
   let hasCompletedPreloaderTransition = false;
-  let lockedScrollY = 0;
   let scrollLockActive = false;
   let videoPlaybackFailsafe = null;
+  let scrollLockRaf = null;
 
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
   const preloaderVideoDesktop = document.querySelector('.preloader-wrapper video, .preloader-player');
@@ -121,40 +121,58 @@ document.addEventListener('DOMContentLoaded', function() {
   function keepLockedScrollPosition() {
     if (!scrollLockActive) return;
     const currentY = window.scrollY || window.pageYOffset || 0;
-    if (currentY !== lockedScrollY) {
-      window.scrollTo(0, lockedScrollY);
+    if (currentY !== 0) {
+      window.scrollTo(0, 0);
     }
+    scrollLockRaf = window.requestAnimationFrame(keepLockedScrollPosition);
   }
 
   function lockScrolling() {
-    lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    window.scrollTo(0, 0);
     scrollLockActive = true;
     document.documentElement.style.overflow = 'hidden';
     document.documentElement.style.overscrollBehavior = 'none';
     document.documentElement.style.touchAction = 'none';
+    document.documentElement.style.position = 'fixed';
+    document.documentElement.style.top = '0';
+    document.documentElement.style.left = '0';
+    document.documentElement.style.right = '0';
+    document.documentElement.style.width = '100%';
+    document.documentElement.style.height = '100%';
     document.body.style.overflow = 'hidden';
     document.body.style.overscrollBehavior = 'none';
     document.body.style.touchAction = 'none';
     document.body.style.position = 'fixed';
-    document.body.style.top = `-${lockedScrollY}px`;
+    document.body.style.top = '0';
     document.body.style.left = '0';
     document.body.style.right = '0';
     document.body.style.width = '100%';
+    document.body.style.height = '100%';
     if (lenis) {
       lenis.stop();
     }
-    window.addEventListener('wheel', preventLockedScroll, { passive: false });
-    window.addEventListener('touchmove', preventLockedScroll, { passive: false });
-    window.addEventListener('keydown', preventLockedKeys, false);
-    window.addEventListener('scroll', keepLockedScrollPosition, { passive: true });
+    window.addEventListener('wheel', preventLockedScroll, { passive: false, capture: true });
+    window.addEventListener('touchmove', preventLockedScroll, { passive: false, capture: true });
+    window.addEventListener('keydown', preventLockedKeys, true);
+    window.addEventListener('scroll', keepLockedScrollPosition, { passive: true, capture: true });
+    document.addEventListener('wheel', preventLockedScroll, { passive: false, capture: true });
+    document.addEventListener('touchmove', preventLockedScroll, { passive: false, capture: true });
+    document.addEventListener('keydown', preventLockedKeys, true);
     keepLockedScrollPosition();
   }
 
   function enableScrolling() {
     scrollLockActive = false;
+    window.cancelAnimationFrame(scrollLockRaf);
     document.documentElement.style.overflow = '';
     document.documentElement.style.overscrollBehavior = '';
     document.documentElement.style.touchAction = '';
+    document.documentElement.style.position = '';
+    document.documentElement.style.top = '';
+    document.documentElement.style.left = '';
+    document.documentElement.style.right = '';
+    document.documentElement.style.width = '';
+    document.documentElement.style.height = '';
     document.body.style.overflow = '';
     document.body.style.overscrollBehavior = '';
     document.body.style.touchAction = '';
@@ -163,11 +181,15 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.style.left = '';
     document.body.style.right = '';
     document.body.style.width = '';
-    window.removeEventListener('wheel', preventLockedScroll, { passive: false });
-    window.removeEventListener('touchmove', preventLockedScroll, { passive: false });
-    window.removeEventListener('keydown', preventLockedKeys, false);
-    window.removeEventListener('scroll', keepLockedScrollPosition, { passive: true });
-    window.scrollTo(0, lockedScrollY);
+    document.body.style.height = '';
+    window.removeEventListener('wheel', preventLockedScroll, { passive: false, capture: true });
+    window.removeEventListener('touchmove', preventLockedScroll, { passive: false, capture: true });
+    window.removeEventListener('keydown', preventLockedKeys, true);
+    window.removeEventListener('scroll', keepLockedScrollPosition, { passive: true, capture: true });
+    document.removeEventListener('wheel', preventLockedScroll, { passive: false, capture: true });
+    document.removeEventListener('touchmove', preventLockedScroll, { passive: false, capture: true });
+    document.removeEventListener('keydown', preventLockedKeys, true);
+    window.scrollTo(0, 0);
     if (lenis) {
       lenis.start();
       lenis.resize();
