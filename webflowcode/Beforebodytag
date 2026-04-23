@@ -628,23 +628,78 @@ function initParticleSection() {
     particleSlides.forEach((slide) => {
       slide.querySelectorAll('video').forEach((video) => {
         video.loop = true;
+        video.autoplay = true;
+        video.preload = 'auto';
         video.muted = true;
         video.defaultMuted = true;
+        video.playsInline = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('muted', '');
+        video.setAttribute('autoplay', '');
       });
     });
   }
+
+  const particleVideoRetryState = new WeakMap();
+
+  function clearParticleVideoRetry(video) {
+    const state = particleVideoRetryState.get(video);
+    if (!state) return;
+    if (state.timeoutId) {
+      window.clearTimeout(state.timeoutId);
+    }
+    if (state.canPlayHandler) {
+      video.removeEventListener('canplay', state.canPlayHandler);
+    }
+    particleVideoRetryState.delete(video);
+  }
+
   function playActiveParticleVideo(video) {
     if (!video) return;
-    
+
+    clearParticleVideoRetry(video);
+    video.autoplay = true;
+    video.loop = true;
+    video.preload = 'auto';
     video.muted = true;
+    video.defaultMuted = true;
+    video.playsInline = true;
     video.setAttribute('playsinline', '');
-    
-    if (video.paused) {
-      let playPromise = video.play();
-      if (playPromise !== undefined) {
-        playPromise.catch(() => {});
+    video.setAttribute('muted', '');
+    video.setAttribute('autoplay', '');
+
+    const attemptPlay = () => {
+      const playPromise = video.play();
+      if (playPromise && typeof playPromise.catch === 'function') {
+        playPromise.catch(() => {
+          const canPlayHandler = () => {
+            clearParticleVideoRetry(video);
+            attemptPlay();
+          };
+          const timeoutId = window.setTimeout(() => {
+            clearParticleVideoRetry(video);
+            attemptPlay();
+          }, 400);
+          particleVideoRetryState.set(video, { canPlayHandler, timeoutId });
+          video.addEventListener('canplay', canPlayHandler, { once: true });
+          if (video.readyState < 2 && typeof video.load === 'function') {
+            video.load();
+          }
+        });
+      }
+    };
+
+    if (video.readyState >= 2) {
+      attemptPlay();
+    } else {
+      const canPlayHandler = () => {
+        clearParticleVideoRetry(video);
+        attemptPlay();
+      };
+      particleVideoRetryState.set(video, { canPlayHandler, timeoutId: null });
+      video.addEventListener('canplay', canPlayHandler, { once: true });
+      if (typeof video.load === 'function') {
+        video.load();
       }
     }
   }
@@ -659,15 +714,19 @@ function initParticleSection() {
       slide.querySelectorAll('video').forEach((video) => {
         
         video.muted = true;
+        video.defaultMuted = true;
         video.playsInline = true;
+        video.autoplay = true;
+        video.preload = 'auto';
         video.setAttribute('playsinline', '');
+        video.setAttribute('muted', '');
+        video.setAttribute('autoplay', '');
 
         if (!shouldPlay || index !== activeIndex) { 
+          clearParticleVideoRetry(video);
           if (!video.paused) video.pause(); 
         } else {
-          if (video.paused) {
-            video.play();
-          }
+          playActiveParticleVideo(video);
         }
       });
     });
@@ -676,6 +735,7 @@ function initParticleSection() {
     isCurrentlyPlayingState = shouldPlay;
   }
   function syncParticleVideoPlayback(activeIndex = currentSlideIndex) {
+    if (!particleSlides[activeIndex]) return;
     setParticleVideoState(activeIndex, particleSectionActive && sliderFullyVisible);
   }
   prepareParticleVideos();
