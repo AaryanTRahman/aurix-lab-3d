@@ -841,7 +841,7 @@ function initParticleSection() {
       const styles = window.getComputedStyle(slide);
       if (styles.visibility === 'hidden' || styles.display === 'none') return;
       const opacity = Number.parseFloat(styles.opacity || '0');
-      if (opacity > bestOpacity) {
+      if (opacity >= bestOpacity) {
         bestOpacity = opacity;
         bestIndex = index;
       }
