@@ -704,7 +704,14 @@ function initParticleSection() {
     }
   }
 
+  let appliedParticleVideoIndex = -1;
+  let appliedParticleShouldPlay = null;
+
   function setParticleVideoState(activeIndex = 0, shouldPlay = false) {
+    if (appliedParticleVideoIndex === activeIndex && appliedParticleShouldPlay === shouldPlay) {
+      return;
+    }
+
     particleSlides.forEach((slide, index) => {
       slide.querySelectorAll('video').forEach((video) => {
         
@@ -730,6 +737,9 @@ function initParticleSection() {
         }
       });
     });
+
+    appliedParticleVideoIndex = activeIndex;
+    appliedParticleShouldPlay = shouldPlay;
   }
   function syncParticleVideoPlayback(activeIndex = currentSlideIndex) {
     if (!particleSlides[activeIndex]) return;
