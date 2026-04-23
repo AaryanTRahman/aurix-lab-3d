@@ -99,16 +99,25 @@ document.addEventListener('DOMContentLoaded', function() {
   let hasCompletedPreloaderTransition = false;
 
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
-  const preloaderVideoDesktop = document.querySelector('.preloader-wrapper video');
+  const preloaderVideoDesktop = document.querySelector('.preloader-wrapper video, .preloader-player');
   if (preloaderVideoDesktop) {
     preloaderVideoDesktop.muted = true;
     preloaderVideoDesktop.setAttribute('muted', '');
     preloaderVideoDesktop.setAttribute('playsinline', '');
+    preloaderVideoDesktop.setAttribute('preload', 'auto');
     preloaderVideoDesktop.playsInline = true;
+    preloaderVideoDesktop.loop = false;
+    preloaderVideoDesktop.pause();
   }
 
   const heroIconBtn = document.querySelector('.hero-content-wrapper .icon-btn-wrapper');
   const navbar = document.querySelector('.navbar-wrapper');
+
+  const preloaderState = window.__aurixPreloaderState = window.__aurixPreloaderState || {
+    pageReady: false,
+    sceneReady: false,
+    videoStarted: false
+  };
 
   if (heroIconBtn) {
     heroIconBtn.style.opacity = '0';
@@ -167,25 +176,90 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 500);
   }
 
-// console.log('preloaderVideoDesktop found:', !!preloaderVideoDesktop);
-    if (preloaderVideoDesktop) {
-      preloaderVideoDesktop.addEventListener('ended', function() {
-      transitionToHero();
-    });
-    // preloaderVideoDesktop.addEventListener('error', function() {
-    //   transitionToHero();
-    // });
-    preloaderVideoDesktop.play().catch(function() {
-      transitionToHero();
-    });
-    setTimeout(() => {
-      transitionToHero();
-    }, 15000);
-  } else {
-    setTimeout(() => {
-      transitionToHero();
-    }, 1000);
+  function finalizePreloaderVideoState() {
+    transitionToHero();
   }
+
+  function tryStartPreloaderVideo() {
+    if (!preloaderVideoDesktop || preloaderState.videoStarted) return;
+    if (!preloaderState.pageReady || !preloaderState.sceneReady) return;
+
+    preloaderState.videoStarted = true;
+    try {
+      preloaderVideoDesktop.currentTime = 0;
+    } catch (error) {
+      console.warn('Could not reset preloader video time', error);
+    }
+
+    const playPromise = preloaderVideoDesktop.play();
+    if (playPromise && typeof playPromise.catch === 'function') {
+      playPromise.catch(function() {
+        finalizePreloaderVideoState();
+      });
+    }
+  }
+
+  function markPreloaderPageReady() {
+    if (preloaderState.pageReady) return;
+    preloaderState.pageReady = true;
+    tryStartPreloaderVideo();
+  }
+
+  function markPreloaderSceneReady() {
+    if (preloaderState.sceneReady) return;
+    preloaderState.sceneReady = true;
+    tryStartPreloaderVideo();
+  }
+
+  window.addEventListener('aurix:scene-ready', markPreloaderSceneReady, { once: true });
+
+  Promise.all([
+    document.fonts ? document.fonts.ready.catch(() => undefined) : Promise.resolve(),
+    new Promise((resolve) => {
+      if (document.readyState === 'complete') {
+        resolve();
+      } else {
+        window.addEventListener('load', resolve, { once: true });
+      }
+    })
+  ]).then(markPreloaderPageReady);
+
+  if (preloaderVideoDesktop) {
+    const freezeOnFirstFrame = function() {
+      try {
+        preloaderVideoDesktop.currentTime = 0;
+      } catch (error) {
+        console.warn('Could not freeze preloader first frame', error);
+      }
+      preloaderVideoDesktop.pause();
+    };
+
+    if (preloaderVideoDesktop.readyState >= 2) {
+      freezeOnFirstFrame();
+    } else {
+      preloaderVideoDesktop.addEventListener('loadeddata', freezeOnFirstFrame, { once: true });
+    }
+
+    preloaderVideoDesktop.addEventListener('ended', finalizePreloaderVideoState, { once: true });
+    preloaderVideoDesktop.addEventListener('error', finalizePreloaderVideoState, { once: true });
+  }
+
+  // Shared failsafe so the loader never deadlocks if Webflow or the 3D scene stalls.
+  setTimeout(() => {
+    if (hasCompletedPreloaderTransition) return;
+    if (preloaderVideoDesktop && !preloaderState.videoStarted) {
+      preloaderState.pageReady = true;
+      preloaderState.sceneReady = true;
+      tryStartPreloaderVideo();
+      setTimeout(() => {
+        if (!hasCompletedPreloaderTransition) {
+          finalizePreloaderVideoState();
+        }
+      }, 9000);
+      return;
+    }
+    finalizePreloaderVideoState();
+  }, 20000);
 })();
 let hasStartedSequentialInit = false;
 let scrollTriggerRefreshTimer = null;
