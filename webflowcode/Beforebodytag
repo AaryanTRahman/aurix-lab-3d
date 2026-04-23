@@ -31,15 +31,24 @@ const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
 const isMobileDevice = window.innerWidth <= 767 || isTouchDevice;
 
 let lenis = null;
-if (!isMobileDevice) {
-  lenis = new Lenis({
-    duration: 1.2,
-    easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-    orientation: 'vertical',
-    smoothWheel: true,
-    infinite: false,
-  });
-}
+lenis = new Lenis(
+  isMobileDevice
+    ? {
+        duration: 0.9,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        smoothWheel: true,
+        smoothTouch: false,
+        infinite: false,
+      }
+    : {
+        duration: 1.2,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        orientation: 'vertical',
+        smoothWheel: true,
+        infinite: false,
+      }
+);
 if (lenis) {
   window.addEventListener("resize", () => {
     clearTimeout(window.lenisResizeTimer);
@@ -51,7 +60,7 @@ if (lenis) {
 
 document.addEventListener('DOMContentLoaded', function() {
   gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.normalizeScroll(true);
+    ScrollTrigger.normalizeScroll(false);
 
   ScrollTrigger.config({ ignoreMobileResize: true,
       limitCallbacks: true });
