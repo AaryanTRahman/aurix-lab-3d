@@ -641,6 +641,7 @@ function initParticleSection() {
   }
 
   const particleVideoRetryState = new WeakMap();
+  const particleVideoAppliedState = new WeakMap();
 
   function clearParticleVideoRetry(video) {
     const state = particleVideoRetryState.get(video);
@@ -704,17 +705,36 @@ function initParticleSection() {
     }
   }
 
-  let appliedParticleVideoIndex = -1;
-  let appliedParticleShouldPlay = null;
+  function applyParticleVideoState(video, shouldPlay) {
+    const lastAppliedState = particleVideoAppliedState.get(video);
+    if (lastAppliedState === shouldPlay) return;
+    particleVideoAppliedState.set(video, shouldPlay);
 
-  function setParticleVideoState(activeIndex = 0, shouldPlay = false) {
-    if (appliedParticleVideoIndex === activeIndex && appliedParticleShouldPlay === shouldPlay) {
+    if (!shouldPlay) {
+      clearParticleVideoRetry(video);
+      if (!video.paused) video.pause();
       return;
     }
 
+    if (video.ended) {
+      try {
+        video.currentTime = 0;
+      } catch (error) {}
+    }
+    playActiveParticleVideo(video);
+  }
+
+  function setParticleVideoState() {
     particleSlides.forEach((slide, index) => {
+      const styles = window.getComputedStyle(slide);
+      const opacity = Number.parseFloat(styles.opacity || '0');
+      const slideShouldPlay = particleSectionActive
+        && sliderFullyVisible
+        && styles.display !== 'none'
+        && styles.visibility !== 'hidden'
+        && opacity > 0.35;
+
       slide.querySelectorAll('video').forEach((video) => {
-        
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
@@ -723,27 +743,13 @@ function initParticleSection() {
         video.setAttribute('playsinline', '');
         video.setAttribute('muted', '');
         video.setAttribute('autoplay', '');
-
-        if (!shouldPlay || index !== activeIndex) { 
-          clearParticleVideoRetry(video);
-          if (!video.paused) video.pause(); 
-        } else {
-          if (video.ended) {
-            try {
-              video.currentTime = 0;
-            } catch (error) {}
-          }
-          playActiveParticleVideo(video);
-        }
+        applyParticleVideoState(video, slideShouldPlay);
       });
     });
-
-    appliedParticleVideoIndex = activeIndex;
-    appliedParticleShouldPlay = shouldPlay;
   }
-  function syncParticleVideoPlayback(activeIndex = currentSlideIndex) {
-    if (!particleSlides[activeIndex]) return;
-    setParticleVideoState(activeIndex, particleSectionActive && sliderFullyVisible);
+
+  function syncParticleVideoPlayback() {
+    setParticleVideoState();
   }
   prepareParticleVideos();
 
@@ -852,7 +858,7 @@ function initParticleSection() {
       currentSlideIndex = nextSlideIndex;
       updateProgressBar(nextSlideIndex);
     }
-    syncParticleVideoPlayback(nextSlideIndex);
+    syncParticleVideoPlayback();
   }
 
   function addSlideToTimeline(tl, el, inPos, slideIndex) {
@@ -891,12 +897,12 @@ function initParticleSection() {
         particleSectionActive = true;
         updateParticlePlaybackFromVisibility();
       },
-      onLeave: () => { particleSectionActive = false; setParticleVideoState(0, false); },
+      onLeave: () => { particleSectionActive = false; syncParticleVideoPlayback(); },
       onEnterBack: () => {
         particleSectionActive = true;
         updateParticlePlaybackFromVisibility();
       },
-      onLeaveBack: () => { particleSectionActive = false; setParticleVideoState(0, false); }
+      onLeaveBack: () => { particleSectionActive = false; syncParticleVideoPlayback(); }
     },
     onUpdate: () => {
       updateParticlePlaybackFromVisibility();
@@ -945,7 +951,10 @@ function initParticleSection() {
         sliderFullyVisible = true;
         updateParticlePlaybackFromVisibility();
       },
-      onReverseComplete: () => { sliderFullyVisible = false; setParticleVideoState(0, false); }
+      onReverseComplete: () => {
+        sliderFullyVisible = false;
+        syncParticleVideoPlayback();
+      }
     }, 0.12);
 
   mainTl
