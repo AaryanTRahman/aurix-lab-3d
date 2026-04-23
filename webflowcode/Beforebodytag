@@ -344,10 +344,10 @@ document.addEventListener('DOMContentLoaded', function() {
   Promise.all([
     document.fonts ? document.fonts.ready.catch(() => undefined) : Promise.resolve(),
     new Promise((resolve) => {
-      if (document.readyState === 'complete') {
+      if (document.readyState !== 'loading') {
         resolve();
       } else {
-        window.addEventListener('load', resolve, { once: true });
+        document.addEventListener('DOMContentLoaded', resolve, { once: true });
       }
     })
   ]).then(markPreloaderPageReady);
@@ -391,7 +391,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 9000);
       return;
     }
-    finalizePreloaderVideoState();
+    if (!preloaderVideoDesktop) {
+      finalizePreloaderVideoState();
+    }
+    // Video already started — scheduleVideoPlaybackFailsafe() handles the duration-aware cutoff
   }, 5000);
 })();
 let hasStartedSequentialInit = false;
@@ -487,7 +490,6 @@ function initParticleSection() {
 
   const totalSlides = 4;
   let currentSlideIndex = 0;
-  let sliderFullyVisible = false;
   let fallingStarsInstance = null;
   let particleSectionActive = false;
   const particleIsMobile = window.innerWidth < 768;
@@ -716,7 +718,8 @@ function initParticleSection() {
 
   function applyParticleVideoState(video, shouldPlay) {
     const lastAppliedState = particleVideoAppliedState.get(video);
-    if (lastAppliedState === shouldPlay) return;
+    const isActuallyPlaying = !video.paused && !video.ended;
+    if (lastAppliedState === shouldPlay && (!shouldPlay || isActuallyPlaying)) return;
     particleVideoAppliedState.set(video, shouldPlay);
 
     if (!shouldPlay) {
@@ -739,7 +742,8 @@ function initParticleSection() {
     // computed opacity thresholds during rapid timeline scrubbing.
     particleSlides.forEach((slide, index) => {
       const isVisibleInLayout = slide.style.display !== 'none' && slide.style.visibility !== 'hidden';
-      const shouldPlay = particleSectionActive && sliderFullyVisible && isVisibleInLayout && (index === currentSlideIndex);
+      const sliderIsVisible = slider.style.visibility !== 'hidden' && slider.style.display !== 'none';
+      const shouldPlay = particleSectionActive && sliderIsVisible && isVisibleInLayout && (index === currentSlideIndex);
 
       slide.querySelectorAll('video').forEach((video) => {
         video.muted = true;
@@ -952,17 +956,7 @@ function initParticleSection() {
       onReverseComplete: () => { if (fallingStarsInstance) fallingStarsInstance.start(); }
     }, 0.12)
     .set(starBgBox, { visibility: 'hidden' }, 0.27)
-    .set(slider, {
-      opacity: 1, visibility: 'visible',
-      onStart: () => {
-        sliderFullyVisible = true;
-        updateParticlePlaybackFromVisibility();
-      },
-      onReverseComplete: () => {
-        sliderFullyVisible = false;
-        syncParticleVideoPlayback();
-      }
-    }, 0.12);
+    .set(slider, { opacity: 1, visibility: 'visible' }, 0.12);
 
   mainTl
     .to(navbarLogo, { opacity: 1, visibility: 'visible', duration: 0.10, ease: 'power2.inOut' }, 0.20)
