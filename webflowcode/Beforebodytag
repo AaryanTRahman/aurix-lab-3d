@@ -18,8 +18,6 @@
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const isMobileDevice = window.innerWidth <= 767 || isTouchDevice;
 
-// FIX: Only initialize Lenis on actual desktop devices. 
-// This completely stops the "swinging back" momentum conflict.
 let lenis = null;
 if (!isMobileDevice) {
   lenis = new Lenis({
@@ -30,11 +28,8 @@ if (!isMobileDevice) {
     infinite: false,
   });
 }
-  // Add this immediately after your Lenis initialization block
 if (lenis) {
   window.addEventListener("resize", () => {
-    // Only resize Lenis when the window is actually done resizing, 
-    // to prevent the jumpy layout issues.
     clearTimeout(window.lenisResizeTimer);
     window.lenisResizeTimer = setTimeout(() => {
       lenis.resize();
@@ -44,35 +39,9 @@ if (lenis) {
 
 document.addEventListener('DOMContentLoaded', function() {
   gsap.registerPlugin(ScrollTrigger);
-	// THIS IS THE KEY: Normalize Scroll
-    // This handles the conflict between smooth-scrolling (Lenis) 
-    // and GSAP pinning/triggering natively.
     ScrollTrigger.normalizeScroll(true);
-    
-    // Also, explicitly link Lenis and ScrollTrigger properly
-    if (lenis) {
-      lenis.on('scroll', ScrollTrigger.update);
-      gsap.ticker.add((time) => {
-        lenis.raf(time * 1000);
-      });
-      // Use lagSmoothing to prevent jumps when the browser frame-drops
-      gsap.ticker.lagSmoothing(0); 
-    }
-  // FIX: ResizeObserver to catch Webflow lazy-loaded images and late Spline injections
-    // This permanently prevents the "sometimes jumping" by keeping GSAP's math 100% accurate.
-    // let resizeTimer;
-    // const bodyObserver = new ResizeObserver(() => {
-    //   clearTimeout(resizeTimer);
-    //   resizeTimer = setTimeout(() => {
-    //     ScrollTrigger.refresh();
-    //   }, 200); 
-    // });
-    // bodyObserver.observe(document.body);
 
-  // Ignore address bar resizes so pins don't break
   ScrollTrigger.config({ ignoreMobileResize: true,
-      // FIX 3: Limits how often GSAP is allowed to recalculate layout shifts. 
-      // This saves massive CPU power during the heavy initial page load.
       limitCallbacks: true });
 
   if (lenis) {
@@ -82,21 +51,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     gsap.ticker.lagSmoothing(0);
   }
-  // Wait for all images/fonts to finish loading, then refresh coordinates
   window.addEventListener('load', function() {
     ScrollTrigger.refresh();
   });
 (function() {
-  document.body.style.overflow = 'hidden';
-  document.documentElement.style.overflow = 'hidden';
-  // if (typeof lenis !== 'undefined') {
-  //   lenis.stop();
-  // }
-  if (lenis) {
-    lenis.stop();
-  }
-
   let hasCompletedPreloaderTransition = false;
+  let lockedScrollY = 0;
 
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
   const preloaderVideoDesktop = document.querySelector('.preloader-wrapper video, .preloader-player');
@@ -106,7 +66,9 @@ document.addEventListener('DOMContentLoaded', function() {
     preloaderVideoDesktop.setAttribute('playsinline', '');
     preloaderVideoDesktop.setAttribute('preload', 'auto');
     preloaderVideoDesktop.playsInline = true;
+    preloaderVideoDesktop.autoplay = false;
     preloaderVideoDesktop.loop = false;
+    preloaderVideoDesktop.removeAttribute('autoplay');
     preloaderVideoDesktop.pause();
   }
 
@@ -130,25 +92,62 @@ document.addEventListener('DOMContentLoaded', function() {
     navbar.style.transition = 'opacity 0.8s ease-out, visibility 0.8s';
   }
 
+  function preventLockedScroll(event) {
+    event.preventDefault();
+  }
+
+  function preventLockedKeys(event) {
+    const blockedKeys = ['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Spacebar'];
+    if (blockedKeys.includes(event.key)) {
+      event.preventDefault();
+    }
+  }
+
+  function lockScrolling() {
+    lockedScrollY = window.scrollY || window.pageYOffset || 0;
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overflow = 'hidden';
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${lockedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+    if (lenis) {
+      lenis.stop();
+    }
+    window.addEventListener('wheel', preventLockedScroll, { passive: false });
+    window.addEventListener('touchmove', preventLockedScroll, { passive: false });
+    window.addEventListener('keydown', preventLockedKeys, false);
+  }
+
   function enableScrolling() {
-    document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
-    // if (typeof lenis !== 'undefined') {
+    document.body.style.overflow = '';
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.removeEventListener('wheel', preventLockedScroll, { passive: false });
+    window.removeEventListener('touchmove', preventLockedScroll, { passive: false });
+    window.removeEventListener('keydown', preventLockedKeys, false);
+    window.scrollTo(0, lockedScrollY);
     if (lenis) {
       lenis.start();
+      lenis.resize();
     }
     if (typeof ScrollTrigger !== 'undefined') {
       ScrollTrigger.refresh();
     }
   }
 
+  lockScrolling();
+
   function transitionToHero() {
-    // console.log('transitionToHero called, hasCompleted:', hasCompletedPreloaderTransition);
     if (hasCompletedPreloaderTransition) return;
     hasCompletedPreloaderTransition = true;
 
     if (!preloaderWrapper) {
-      console.log('Starting sequential init');
       startSequentialSectionInit();
       enableScrolling();
       return;
@@ -186,9 +185,14 @@ document.addEventListener('DOMContentLoaded', function() {
 
     preloaderState.videoStarted = true;
     try {
+      preloaderVideoDesktop.pause();
       preloaderVideoDesktop.currentTime = 0;
     } catch (error) {
       console.warn('Could not reset preloader video time', error);
+    }
+
+    if (typeof preloaderVideoDesktop.load === 'function' && preloaderVideoDesktop.readyState < 2) {
+      preloaderVideoDesktop.load();
     }
 
     const playPromise = preloaderVideoDesktop.play();
@@ -227,24 +231,25 @@ document.addEventListener('DOMContentLoaded', function() {
   if (preloaderVideoDesktop) {
     const freezeOnFirstFrame = function() {
       try {
-        preloaderVideoDesktop.currentTime = 0;
+        preloaderVideoDesktop.pause();
+        if (preloaderVideoDesktop.readyState >= 1) {
+          preloaderVideoDesktop.currentTime = 0.001;
+        }
       } catch (error) {
         console.warn('Could not freeze preloader first frame', error);
       }
-      preloaderVideoDesktop.pause();
     };
 
-    if (preloaderVideoDesktop.readyState >= 2) {
+    if (preloaderVideoDesktop.readyState >= 1) {
       freezeOnFirstFrame();
     } else {
-      preloaderVideoDesktop.addEventListener('loadeddata', freezeOnFirstFrame, { once: true });
+      preloaderVideoDesktop.addEventListener('loadedmetadata', freezeOnFirstFrame, { once: true });
     }
 
     preloaderVideoDesktop.addEventListener('ended', finalizePreloaderVideoState, { once: true });
     preloaderVideoDesktop.addEventListener('error', finalizePreloaderVideoState, { once: true });
   }
 
-  // Shared failsafe so the loader never deadlocks if Webflow or the 3D scene stalls.
   setTimeout(() => {
     if (hasCompletedPreloaderTransition) return;
     if (preloaderVideoDesktop && !preloaderState.videoStarted) {
@@ -262,40 +267,6 @@ document.addEventListener('DOMContentLoaded', function() {
   }, 20000);
 })();
 let hasStartedSequentialInit = false;
-let scrollTriggerRefreshTimer = null;
-function scheduleScrollTriggerRefresh() {
-  if (typeof ScrollTrigger === 'undefined') return;
-  window.clearTimeout(scrollTriggerRefreshTimer);
-  scrollTriggerRefreshTimer = window.setTimeout(() => {
-    ScrollTrigger.refresh();
-  }, 120);
-}
-// function scheduleSectionInit(initFn, delay) {
-//   window.setTimeout(() => {
-//     const runner = () => {
-//       try {
-//         initFn();
-//         // scheduleScrollTriggerRefresh();
-//       } catch (error) {
-//         console.error('Sequential section init failed', error);
-//       }
-//     };
-//     if ('requestIdleCallback' in window) {
-//       window.requestIdleCallback(runner, { timeout: 500 });
-//       return;
-//     }
-//     window.setTimeout(runner, 0);
-//   }, delay);
-// }
-  // function scheduleSectionInit(initFn, delay) {
-  //   window.setTimeout(() => {
-  //     try {
-  //       initFn();
-  //     } catch (error) {
-  //       console.error('Sequential section init failed', error);
-  //     }
-  //   }, delay);
-  // }
 
   function scheduleSectionInit(initFn, delay) {
     window.setTimeout(() => {
@@ -303,29 +274,12 @@ function scheduleScrollTriggerRefresh() {
     }, delay);
   }
 
-  // function lockHeightsInPixels() {
-  //   const viewportHeight = window.innerHeight;
-  //   // Hard-lock the problematic sections to exact pixels
-  //   const sectionsToLock = document.querySelectorAll('.hero-section, .particle-section, .work-meet-combined-section');
     
-  //   sectionsToLock.forEach(sec => {
-  //     // sec.style.height = viewportHeight + 'px';
-  //     // sec.style.minHeight = viewportHeight + 'px';
-  //     // sec.style.maxHeight = viewportHeight + 'px';
-  //   });
     
-  //   // Turn off Webflow's lazy loading on images above the fold to stop silent layout shifts
-  //   const aboveFoldImages = document.querySelectorAll('.hero-section img, .division-home-section img');
-  //   aboveFoldImages.forEach(img => {
-  //     img.setAttribute('loading', 'eager');
-  //   });
-  // }
   
 function startSequentialSectionInit() {
   if (hasStartedSequentialInit) return;
   hasStartedSequentialInit = true;
-  // lockHeightsInPixels();
-  console.log('startSequentialSectionInit running');
   scheduleSectionInit(initDivisionSection, 0);
   scheduleSectionInit(initParticleSection, 180);
   scheduleSectionInit(initWorkMeetSection, 420);
@@ -333,8 +287,6 @@ function startSequentialSectionInit() {
   scheduleSectionInit(initContactSection, 940);
   scheduleSectionInit(initTinyflowSlider, 1200);
   
-  // FIX 2: Wait for custom fonts and images to ACTUALLY finish loading before refreshing GSAP.
-  // This guarantees pin coordinates are calculated on the final, stable layout.
   Promise.all([
     document.fonts ? document.fonts.ready : Promise.resolve(),
     new Promise(resolve => {
@@ -344,7 +296,6 @@ function startSequentialSectionInit() {
   ]).then(() => {
     setTimeout(() => {
       ScrollTrigger.refresh();
-      console.log("GSAP Refreshed on stable DOM");
     }, 300);
   });
 }
@@ -365,8 +316,6 @@ if (divisionSection) {
       end: 'bottom 80%',
       scrub: 1,
       markers: false,
-	  // onLeave: () => window.dispatchEvent(new Event('resize')),
-      // onEnterBack: () => window.dispatchEvent(new Event('resize'))
     }
   });
   if (headingBox) {
@@ -399,7 +348,6 @@ if (divisionSection) {
 }
 
 function initParticleSection() {
-  console.log('initParticleSection running');
   const section = document.querySelector('.particle-section');
   const title = document.querySelector('.text-box-title');
   const slider = document.querySelector('.spline-slider-wrapper');
@@ -423,7 +371,6 @@ function initParticleSection() {
   };
   const particleSlides = Array.from(section.querySelectorAll('.spline-slider-wrapper .slide-item'));
 
-  // ── Star background (unchanged) ──────────────────────────────────────────
   function initializeStarBackground() {
     const canvas = document.getElementById('starsCanvas');
     const container = document.getElementById('starsContainer');
@@ -444,7 +391,6 @@ function initParticleSection() {
       init() {
         this.resizeCanvas();
         
-        // FIX: Debounce the resize event so it doesn't lag mobile scrolling
         let resizeTimeout;
         window.addEventListener('resize', () => {
           clearTimeout(resizeTimeout);
@@ -567,86 +513,32 @@ function initParticleSection() {
         video.defaultMuted = true;
         video.setAttribute('playsinline', '');
         video.setAttribute('muted', '');
-        // FIX: Removed the code that strips autoplay attributes
       });
     });
   }
-  // function playActiveParticleVideo(video) {
-  //   if (!video) return;
-  //   video.muted = true;
-  //   video.defaultMuted = true;
-  //   video.playsInline = true;
-  //   video.setAttribute('muted', '');
-  //   video.setAttribute('playsinline', '');
-  //   video.preload = 'auto';
-  //   const attemptPlay = () => {
-  //     const playPromise = video.play();
-  //     if (playPromise && typeof playPromise.catch === 'function') {
-  //       playPromise.catch(() => {
-  //         const retryOnCanPlay = () => {
-  //           const retryPromise = video.play();
-  //           if (retryPromise && typeof retryPromise.catch === 'function') retryPromise.catch(() => {});
-  //         };
-  //         video.addEventListener('canplay', retryOnCanPlay, { once: true });
-  //         if (video.readyState < 2) video.load();
-  //       });
-  //     }
-  //   };
-  //   if (video.readyState >= 2) { attemptPlay(); return; }
-  //   video.addEventListener('canplay', attemptPlay, { once: true });
-  //   video.load();
-  // }
-  // function setParticleVideoState(activeIndex = 0, shouldPlay = false) {
-  //   particleSlides.forEach((slide, index) => {
-  //     slide.querySelectorAll('video').forEach((video) => {
-  //       if (!shouldPlay || index !== activeIndex) { video.pause(); return; }
-  //       playActiveParticleVideo(video);
-  //     });
-  //   });
-  // }
   function playActiveParticleVideo(video) {
     if (!video) return;
     
-    // Reset attributes just in case iOS stripped them
     video.muted = true;
     video.setAttribute('playsinline', '');
     
     if (video.paused) {
-      // FIX: Keep it simple. Browsers handle standard play promises best.
       let playPromise = video.play();
       if (playPromise !== undefined) {
-        playPromise.catch(error => {
-          console.log("Video autoplay prevented:", error);
-          // Auto-play was prevented. Wait for user interaction.
-        });
+        playPromise.catch(() => {});
       }
     }
   }
 
-  // function setParticleVideoState(activeIndex = 0, shouldPlay = false) {
-  //   particleSlides.forEach((slide, index) => {
-  //     slide.querySelectorAll('video').forEach((video) => {
-  //       if (!shouldPlay || index !== activeIndex) { 
-  //         if (!video.paused) video.pause(); 
-  //         return; 
-  //       }
-  //       playActiveParticleVideo(video);
-  //     });
-  //   });
-  // }
-// FIX 1: Use a state tracker to stop spamming the browser's media engine.
-  // This prevents the 3D scene from crashing while allowing instant autoplay.
   let currentlyPlayingIndex = -1;
   let isCurrentlyPlayingState = false;
 
   function setParticleVideoState(activeIndex = 0, shouldPlay = false) {
-    // If the slide hasn't changed and the play state is the same, DO NOTHING.
     if (currentlyPlayingIndex === activeIndex && isCurrentlyPlayingState === shouldPlay) return;
 
     particleSlides.forEach((slide, index) => {
       slide.querySelectorAll('video').forEach((video) => {
         
-        // Ensure iOS strict attributes are set
         video.muted = true;
         video.playsInline = true;
         video.setAttribute('playsinline', '');
@@ -654,17 +546,6 @@ function initParticleSection() {
         if (!shouldPlay || index !== activeIndex) { 
           if (!video.paused) video.pause(); 
         } else {
-          // if (video.paused) {
-          //   // We use a promise-safe play to prevent the autoplay error
-          //   const playPromise = video.play();
-          //   if (playPromise !== undefined) {
-          //     playPromise.catch(error => {
-          //       // If blocked, we mute and try again (Browser-standard fallback)
-          //       video.muted = true;
-          //       video.play();
-          //     });
-          //   }
-          // }
           if (video.paused) {
             video.play();
           }
@@ -672,7 +553,6 @@ function initParticleSection() {
       });
     });
 
-    // Update the tracker
     currentlyPlayingIndex = activeIndex;
     isCurrentlyPlayingState = shouldPlay;
   }
@@ -681,13 +561,11 @@ function initParticleSection() {
   }
   prepareParticleVideos();
 
-  // ── Progress bar ──────────────────────────────────────────────────────────
   function updateProgressBar(index) {
     const progress = ((index + 1) / totalSlides) * 100;
     gsap.to('#progressBar', { width: progress + '%', duration: 0.3, ease: 'power2.out' });
   }
 
-  // ── Get slide child elements ──────────────────────────────────────────────
   function getSlideElements(slideIndex) {
     const slide = particleSlides[slideIndex];
     if (!slide) return null;
@@ -703,8 +581,6 @@ function initParticleSection() {
     };
   }
 
-  // ── Initial CSS state ─────────────────────────────────────────────────────
-  // slides-container needs to be a positioned container
   const slidesContainer = slider.querySelector('.slides-container');
   if (slidesContainer) {
     gsap.set(slidesContainer, {
@@ -714,7 +590,6 @@ function initParticleSection() {
     });
   }
 
-  // All slides stacked, hidden, positioned absolutely
   gsap.set(particleSlides, {
     position: 'absolute',
     top: '50%',
@@ -727,7 +602,6 @@ function initParticleSection() {
     visibility: 'hidden'
   });
 
-  // Hide child elements of all slides at start
   for (let i = 0; i < 4; i++) {
     const el = getSlideElements(i);
     if (!el) continue;
@@ -746,7 +620,6 @@ function initParticleSection() {
   if (scrollIndicator) gsap.set(scrollIndicator, { opacity: 0, y: 50, visibility: 'hidden' });
   if (starBgBox) gsap.set(starBgBox, { opacity: 0, visibility: 'hidden' });
 
-  // ── Word split (unchanged) ────────────────────────────────────────────────
   const originalText = title.textContent.trim();
   const words = originalText.split(' ');
   title.innerHTML = words.map(word =>
@@ -758,7 +631,6 @@ function initParticleSection() {
   gsap.set(wordElements, { y: 0, opacity: 1, scale: 1 });
   gsap.set(lastWord, { transformOrigin: 'center center', zIndex: 10 });
 
-  // ── Scale values ──────────────────────────────────────────────────────────
   const isMobileDevice = window.innerWidth < 768;
   const isTabletDevice = window.innerWidth >= 768 && window.innerWidth < 1024;
   let initialScale, finalScale;
@@ -771,16 +643,10 @@ function initParticleSection() {
   const slide3 = getSlideElements(2);
   const slide4 = getSlideElements(3);
 
-  // ── Helper: build a slide-in block at a given timeline position ───────────
-  // Each slide animates IN at `pos`, holds, then animates OUT at `pos + 0.20`
-  // exactly mirroring your original in-animation timings.
-  // The out-animation is just the reverse of the in-animation so scrubbing
-  // back reverses it cleanly.
   function addSlideToTimeline(tl, el, inPos, slideIndex) {
     if (!el) return;
     const outPos = inPos + 0.20; // hold window before next slide starts
 
-    // ── IN ──
     tl.set(el.slide, { visibility: 'visible' }, inPos)
       .to(el.slide, { opacity: 1, duration: 0.03, ease: 'power2.out' }, inPos)
       .to(el.centerBox, { scale: 1, opacity: 1, duration: 0.06, ease: 'power2.out' }, inPos)
@@ -789,14 +655,12 @@ function initParticleSection() {
       .to(el.headings, { opacity: 1, x: 0, duration: 0.06, stagger: 0.015, ease: 'power2.out' }, inPos + 0.09)
       .to(el.desc, { opacity: 1, y: 0, duration: 0.06, ease: 'power2.out' }, inPos + 0.12)
       .to(el.btn, { opacity: 1, y: 0, duration: 0.06, ease: 'power2.out' }, inPos + 0.15)
-      // update progress bar and video as soon as slide is visible
       .add(() => {
         currentSlideIndex = slideIndex;
         updateProgressBar(slideIndex);
         syncParticleVideoPlayback(slideIndex);
       }, inPos + 0.01)
 
-    // ── OUT (only for slides 1–3, slide 4 stays visible until section ends) ──
     if (slideIndex < 3) {
       tl.to(el.btn, { opacity: 0, y: 50, duration: 0.04, ease: 'power2.in' }, outPos)
         .to(el.desc, { opacity: 0, y: 50, duration: 0.04, ease: 'power2.in' }, outPos + 0.01)
@@ -809,7 +673,6 @@ function initParticleSection() {
     }
   }
 
-  // ── Main scrubbed timeline ────────────────────────────────────────────────
   const mainTl = gsap.timeline({
     scrollTrigger: {
       trigger: section,
@@ -817,7 +680,6 @@ function initParticleSection() {
       end: '+=500%',
       pin: true,
       scrub: true,
-      // CRITICAL FIX: Removed anticipatePin to stop the premature jumping
       invalidateOnRefresh: true,
       onEnter: () => { particleSectionActive = true; syncParticleVideoPlayback(); },
       onLeave: () => { particleSectionActive = false; setParticleVideoState(0, false); },
@@ -826,7 +688,6 @@ function initParticleSection() {
     }
   });
 
-  // ── Intro sequence (identical to original) ────────────────────────────────
   mainTl
     .to(button, { opacity: 0, y: 30, duration: 0.08, ease: 'power2.inOut' }, 0)
     .to(otherWords, { opacity: 0, duration: 0.08, ease: 'none' }, 0)
@@ -836,25 +697,12 @@ function initParticleSection() {
       onStart: () => { if (fallingStarsInstance) fallingStarsInstance.start(); },
       onReverseComplete: () => { if (fallingStarsInstance) fallingStarsInstance.stop(); }
     }, 0)
-    // .to(lastWord, {
-    //   x: () => {
-    //     gsap.set(lastWord, { clearProps: 'x,y,scale' });
-    //     const rect = lastWord.getBoundingClientRect();
-    //     return (window.innerWidth / 2) - (rect.left + rect.width / 2);
-    //   },
-    //   y: () => {
-    //     const rect = lastWord.getBoundingClientRect();
-    //     return (window.innerHeight / 2) - (rect.top + rect.height / 2);
-    //   },
-    //   scale: initialScale, duration: 0.12, ease: 'power2.inOut'
-    // }, 0)
     .to(lastWord, {
       x: () => {
         gsap.set(lastWord, { clearProps: 'x,y,scale' });
         const wordRect = lastWord.getBoundingClientRect();
         const sectionRect = section.getBoundingClientRect();
         
-        // Calculate relative to the section's left edge, ignoring global scroll
         const wordCenterX = (wordRect.left - sectionRect.left) + (wordRect.width / 2);
         const sectionCenterX = sectionRect.width / 2;
         return sectionCenterX - wordCenterX;
@@ -863,7 +711,6 @@ function initParticleSection() {
         const wordRect = lastWord.getBoundingClientRect();
         const sectionRect = section.getBoundingClientRect();
         
-        // Calculate relative to the section's top edge, ignoring global scroll
         const wordCenterY = (wordRect.top - sectionRect.top) + (wordRect.height / 2);
         const sectionCenterY = sectionRect.height / 2;
         return sectionCenterY - wordCenterY;
@@ -883,18 +730,15 @@ function initParticleSection() {
       onReverseComplete: () => { sliderFullyVisible = false; setParticleVideoState(0, false); }
     }, 0.12);
 
-  // ── Navbar + scroll indicator (identical to original) ─────────────────────
   mainTl
     .to(navbarLogo, { opacity: 1, visibility: 'visible', duration: 0.10, ease: 'power2.inOut' }, 0.20)
     .to(scrollIndicator, { opacity: 1, y: 0, visibility: 'visible', duration: 0.06, ease: 'power2.out' }, 0.30);
 
-  // ── Slides (each spaced 0.24 apart matching your original 0.42/0.66/0.90) ──
   addSlideToTimeline(mainTl, slide1, 0.18, 0);
   addSlideToTimeline(mainTl, slide2, 0.42, 1);
   addSlideToTimeline(mainTl, slide3, 0.66, 2);
   addSlideToTimeline(mainTl, slide4, 0.90, 3);
 
-  // ── Padding at end so last slide has time to settle ───────────────────────
   mainTl.to({}, { duration: 0.06 }, 0.97);
 }
 
@@ -946,39 +790,7 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
       });
     }
     const phase3Duration = isMobileDevice ? 15.0 : 3.5;
-    // const calculateMaskStopPosition = () => {
-    //   const svgRect = meetSvg.getBoundingClientRect();
-    //   const viewportWidth = window.innerWidth;
-    //   const svgWidth = svgRect.width;
-    //   const svgLeft = svgRect.left;
-    //   const svgRight = svgLeft + svgWidth;
-    //   let targetPosition = viewportWidth;
-    //   if (window.innerWidth < 768) {
-    //     targetPosition = viewportWidth + 100;
-    //   }
-    //   const moveDistance = targetPosition - svgRight;
-    //   console.log('📊 Mask Movement:', {
-    //     device: window.innerWidth < 768 ? 'Mobile' : 'Desktop',
-    //     viewportWidth,
-    //     svgRight,
-    //     targetPosition,
-    //     moveDistance: moveDistance + 'px'
-    //   });
-    //   return moveDistance;
-    // };
 
-	// let maskPos = 0;
- //    const updateMaskPos = () => {
- //        const svgRect = meetSvg.getBoundingClientRect();
- //        const viewportWidth = window.innerWidth;
- //        const svgWidth = svgRect.width;
- //        const svgLeft = svgRect.left;
- //        const svgRight = svgLeft + svgWidth;
- //        let targetPosition = viewportWidth < 768 ? viewportWidth + 100 : viewportWidth;
- //        maskPos = targetPosition - svgRight;
- //    };
- //    // Throttle the calculation using GSAP ticker so it only runs when needed
- //    gsap.ticker.add(updateMaskPos);
         let maskPos = 0;
         const updateMaskPos = () => {
             const svgRect = meetSvg.getBoundingClientRect();
@@ -987,9 +799,7 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
             maskPos = targetPosition - svgRect.right;
         };
         
-        // Run once to get the initial position
         updateMaskPos();
-        // Only recalculate if the user resizes their screen
         window.addEventListener('resize', updateMaskPos);
     
 	const combinedTl = gsap.timeline({
@@ -999,7 +809,6 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
         end: '+=600%',
         pin: true,
         scrub: true,
-        // CRITICAL FIX: Removed anticipatePin and fastScrollEnd to stop jumping
         id: 'work-meet-combined',
         invalidateOnRefresh: true
       }
@@ -1198,9 +1007,6 @@ function initContactSection() {
     }
     const masterTL = gsap.timeline({
       paused: true,
-      onComplete: () => console.log('Contact animation complete'),
-	  // onLeave: () => window.dispatchEvent(new Event('resize')),
-   //    onEnterBack: () => window.dispatchEvent(new Event('resize'))
     });
     contentElements.forEach((selector, index) => {
       const element = contentBox.querySelector(selector);
@@ -1224,9 +1030,7 @@ function initContactSection() {
           { 
             strokeDashoffset: 0, 
             duration: 0.4, 
-            ease: "power1.inOut",
-            onStart: () => console.log(`Drawing letter ${letter}`),
-            onComplete: () => console.log(`Letter ${letter} complete`)
+            ease: "power1.inOut"
           },
           0.8 + (index * 0.1)
         );
