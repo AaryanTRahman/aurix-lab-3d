@@ -138,42 +138,47 @@ html.wf-design-mode .spline-slider-wrapper {
 /* Grids */
 .grid-wrapper { display: grid; grid-template-columns: 2fr 7fr 4fr; width: 100%; height: 100%; gap:9px; }
 .grid-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-/* Webflow background-video containers must fill their grid cell.
-   overflow:hidden clips any video height that exceeds the cell.
-   background:#000 kills the CSS background-image poster Webflow bakes in. */
-.spline-slider-wrapper .grid-wrapper .w-background-video {
-    width: 100% !important;
-    height: 100% !important;
-    position: relative !important;
-    overflow: hidden !important;
-    background: #000 !important;
-}
-/* Hide any fallback <img> Webflow injects inside background-video wrappers */
-.spline-slider-wrapper .grid-wrapper .w-background-video > img {
-    display: none !important;
-}
-/* Grid cells need position:relative so absolutely-positioned videos anchor to
-   the cell, and background:#000 shows as clean black where the video doesn't
-   reach (tall cells with wide videos). */
+/* Grid cells: flex container so videos centre vertically without needing
+   position:absolute (which breaks when GSAP's scale() transform makes the
+   cell the containing block at its collapsed center point). */
 .spline-slider-wrapper .sidebar-left,
 .spline-slider-wrapper .top-box,
 .spline-slider-wrapper .center-box,
 .spline-slider-wrapper .bottom-box,
 .spline-slider-wrapper .sidebar-right {
-    position: relative !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: hidden !important;
     background: #000 !important;
 }
-/* Videos: always fill the full cell width at the video's natural aspect ratio.
-   height:auto lets the video be as tall as its ratio requires; top:50% +
-   translateY(-50%) centres it; overflow:hidden on the cell clips any excess. */
+/* Webflow background-video wrapper: fill the cell, flex for centering.
+   background:#000 kills the CSS background-image poster Webflow bakes in. */
+.spline-slider-wrapper .grid-wrapper .w-background-video {
+    width: 100% !important;
+    height: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    overflow: hidden !important;
+    background: #000 !important;
+    flex-shrink: 0 !important;
+}
+/* Hide any fallback <img> Webflow injects inside background-video wrappers */
+.spline-slider-wrapper .grid-wrapper .w-background-video > img {
+    display: none !important;
+}
+/* Videos: fill full cell width at natural ratio, centred vertically by the
+   flex parent. flex-shrink:0 keeps the natural height; overflow:hidden on
+   the parent clips any excess height. Reset any position/transform so
+   Webflow's own position:absolute on w-background-video>video doesn't fire. */
 .spline-slider-wrapper .grid-wrapper video,
 .spline-slider-wrapper .grid-wrapper .w-background-video > video {
-    position: absolute !important;
-    top: 50% !important;
-    left: 0 !important;
-    transform: translateY(-50%) !important;
+    position: static !important;
+    top: auto !important;
+    left: auto !important;
+    transform: none !important;
     width: 100% !important;
     height: auto !important;
+    flex-shrink: 0 !important;
 }
 .sidebar-left, .top-box, .center-box, .bottom-box, .sidebar-right { border-radius: 1rem; overflow: hidden; }
 .sidebar-left { background-color: #D9D9D9; }
@@ -266,43 +271,28 @@ html, body {
         margin-bottom: 2vh !important; /* Tightens gap before text */
     }
 
-    /* 2. Remove internal padding from Growth grid boxes */
+    /* 2. Growth grid cells use flex — same approach as the general slider rule
+       so videos centre without position:absolute containing-block issues */
     .grid-wrapper.growth .sidebar-left,
     .grid-wrapper.growth .top-box,
     .grid-wrapper.growth .center-box,
     .grid-wrapper.growth .bottom-box,
     .grid-wrapper.growth .sidebar-right {
-        position: relative !important;
         min-height: 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
     }
-    /* w-background-video must fill its cell — needs explicit height separate
-       from the cell rule so height:100% is not accidentally applied to cells */
     .grid-wrapper.growth .w-background-video {
-        position: relative !important;
         width: 100% !important;
         height: 100% !important;
         min-height: 0 !important;
         padding: 0 !important;
-        overflow: hidden !important;
     }
-
-    /* 3. Absolute-position media so it doesn't stretch the grid cells */
+    /* Images: fill their cell with cover (no change needed for imgs) */
     .grid-wrapper.growth img {
-        position: absolute !important;
-        top: 0 !important; left: 0 !important;
-        width: 100% !important; height: 100% !important;
-        object-fit: cover !important;
-    }
-    .grid-wrapper.growth video,
-    .grid-wrapper.growth .w-background-video > video {
-        position: absolute !important;
-        top: 50% !important;
-        left: 0 !important;
-        transform: translateY(-50%) !important;
         width: 100% !important;
-        height: auto !important;
+        height: 100% !important;
+        object-fit: cover !important;
+        flex-shrink: 0 !important;
     }
 }
 </style>
