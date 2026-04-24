@@ -496,7 +496,7 @@ function initParticleSection() {
   const particleIsTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
   const reduceParticleMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const particleStarConfig = {
-    count: reduceParticleMotion ? 0 : (particleIsMobile ? 36 : particleIsTablet ? 54 : 72),
+    count: reduceParticleMotion ? 0 : (particleIsMobile ? 90 : particleIsTablet ? 135 : 180),
     shadowBlur: reduceParticleMotion ? 0 : (particleIsMobile ? 0 : particleIsTablet ? 8 : 12)
   };
   const particleSlides = Array.from(section.querySelectorAll('.spline-slider-wrapper .slide-item'));
