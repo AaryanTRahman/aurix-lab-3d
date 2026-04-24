@@ -49,6 +49,13 @@ html.wf-design-mode .spline-slider-wrapper {
 .scroll-indicator {
     color: #fff;
 }
+.hero-section .scroll-indicator-wrapper {
+    transition: opacity 0.2s ease;
+}
+.hero-section .scroll-indicator-wrapper.is-scrolled {
+    opacity: 0 !important;
+    pointer-events: none;
+}
 .scroll-indicator svg {
     display: block;
     width: clamp(24px, 2.2vw, 34px);

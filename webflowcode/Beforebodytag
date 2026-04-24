@@ -65,6 +65,13 @@ document.addEventListener('DOMContentLoaded', function() {
   ScrollTrigger.config({ ignoreMobileResize: true,
       limitCallbacks: true });
 
+  function syncHeroScrollIndicatorVisibility() {
+    const heroScrollIndicatorWrapper = document.querySelector('.hero-section .scroll-indicator-wrapper');
+    if (!heroScrollIndicatorWrapper) return;
+    const currentY = window.scrollY || window.pageYOffset || 0;
+    heroScrollIndicatorWrapper.classList.toggle('is-scrolled', currentY > 2);
+  }
+
   function safeScrollTriggerRefresh(force = false) {
     if (typeof ScrollTrigger === 'undefined') return false;
     const currentY = window.scrollY || window.pageYOffset || 0;
@@ -78,12 +85,17 @@ document.addEventListener('DOMContentLoaded', function() {
 
   if (lenis) {
     lenis.on('scroll', ScrollTrigger.update);
+    lenis.on('scroll', syncHeroScrollIndicatorVisibility);
     gsap.ticker.add((time) => {
       lenis.raf(time * 1000);
     });
     gsap.ticker.lagSmoothing(0);
   }
+  syncHeroScrollIndicatorVisibility();
+  window.addEventListener('scroll', syncHeroScrollIndicatorVisibility, { passive: true });
+  window.addEventListener('resize', syncHeroScrollIndicatorVisibility);
   window.addEventListener('load', function() {
+    syncHeroScrollIndicatorVisibility();
     safeScrollTriggerRefresh();
   });
 (function() {
