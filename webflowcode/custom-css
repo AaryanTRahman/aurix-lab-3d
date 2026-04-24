@@ -139,7 +139,9 @@ html.wf-design-mode .spline-slider-wrapper {
 .grid-wrapper { display: grid; grid-template-columns: 2fr 7fr 4fr; width: 100%; height: 100%; gap:9px; }
 .grid-wrapper img { width: 100%; height: 100%; object-fit: cover; }
 .spline-slide-item .grid-wrapper video,
-.spline-slide-item .grid-wrapper .w-background-video > video {
+.spline-slide-item .grid-wrapper .w-background-video > video,
+.spline-slider-wrapper .grid-wrapper video,
+.spline-slider-wrapper .grid-wrapper .w-background-video > video {
     width: 100%;
     height: 100%;
     object-fit: cover;

@@ -793,18 +793,24 @@ function initParticleSection() {
     });
   }
 
-  const slideH = Math.round(window.innerHeight * (window.innerWidth < 768 ? 0.50 : 0.80));
-  gsap.set(particleSlides, {
+  const slideSetProps = {
     position: 'absolute',
     top: '50%',
     left: '50%',
     xPercent: -50,
     yPercent: -50,
     width: '90%',
-    height: slideH,
     opacity: 0,
     visibility: 'hidden'
-  });
+  };
+  // Desktop needs an explicit px height so CSS Grid fr-unit rows have a
+  // definite parent size to divide. On mobile, fr rows collapse anyway and
+  // videos size to their intrinsic aspect ratio — forcing a height here
+  // squishes them into fixed-size cells instead.
+  if (window.innerWidth >= 768) {
+    slideSetProps.height = Math.round(window.innerHeight * 0.80);
+  }
+  gsap.set(particleSlides, slideSetProps);
 
   for (let i = 0; i < 4; i++) {
     const el = getSlideElements(i);
