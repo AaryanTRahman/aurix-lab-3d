@@ -58,7 +58,8 @@ html.wf-design-mode .spline-slider-wrapper {
 }
 .scroll-indicator svg {
     display: block;
-    width: clamp(24px, 2.2vw, 34px);
+    /* width: clamp(24px, 2.2vw, 34px); */
+    width: 48px;
     height: auto;
 }
 .scroll-indicator svg path {
