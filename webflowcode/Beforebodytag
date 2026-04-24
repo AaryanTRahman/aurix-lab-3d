@@ -794,7 +794,6 @@ function initParticleSection() {
     });
   }
 
-  const slideH = Math.round(window.innerHeight * (window.innerWidth < 768 ? 0.50 : 0.80));
   gsap.set(particleSlides, {
     position: 'absolute',
     top: '50%',
@@ -802,7 +801,7 @@ function initParticleSection() {
     xPercent: -50,
     yPercent: -50,
     width: '90%',
-    height: slideH,
+    height: 'auto',
     opacity: 0,
     visibility: 'hidden'
   });
