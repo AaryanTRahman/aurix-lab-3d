@@ -46,6 +46,17 @@ html.wf-design-mode .spline-slider-wrapper {
 .spline-slide-btn-wrapper .btn-hvr-overlay {
     display: none;
 }
+.scroll-indicator {
+    color: #fff;
+}
+.scroll-indicator svg {
+    display: block;
+    width: clamp(24px, 2.2vw, 34px);
+    height: auto;
+}
+.scroll-indicator svg path {
+    stroke: currentColor !important;
+}
 /* Gradient border */
 .number-item-box::before, .work-new-box::before, .metric-growth::before, .abt-card-item-box::before {
     content: "";

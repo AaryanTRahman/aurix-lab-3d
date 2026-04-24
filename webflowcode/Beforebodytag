@@ -484,7 +484,7 @@ function initParticleSection() {
   const slider = document.querySelector('.spline-slider-wrapper');
   const button = document.querySelector('.partilce-btn-box');
   const navbarLogo = document.querySelector('.navbar31_logo-link');
-  const scrollIndicator = document.querySelector('.scroll-indicator');
+  const scrollIndicator = section?.querySelector('.scroll-indicator');
   const starBgBox = document.querySelector('.star-bg-box');
   if (!section || !title || !slider) return;
 
@@ -821,7 +821,7 @@ function initParticleSection() {
   gsap.set(slider, { opacity: 0, visibility: 'hidden' });
   gsap.set(button, { opacity: 1, y: 0, visibility: 'visible' });
   if (navbarLogo) gsap.set(navbarLogo, { opacity: 0, visibility: 'hidden' });
-  if (scrollIndicator) gsap.set(scrollIndicator, { opacity: 0, y: 50, visibility: 'hidden' });
+  if (scrollIndicator) gsap.set(scrollIndicator, { opacity: 1, y: 0, visibility: 'visible' });
   if (starBgBox) gsap.set(starBgBox, { opacity: 0, visibility: 'hidden' });
 
   const originalText = title.textContent.trim();
@@ -960,8 +960,7 @@ function initParticleSection() {
     .set(slider, { opacity: 1, visibility: 'visible' }, 0.12);
 
   mainTl
-    .to(navbarLogo, { opacity: 1, visibility: 'visible', duration: 0.10, ease: 'power2.inOut' }, 0.20)
-    .to(scrollIndicator, { opacity: 1, y: 0, visibility: 'visible', duration: 0.06, ease: 'power2.out' }, 0.30);
+    .to(navbarLogo, { opacity: 1, visibility: 'visible', duration: 0.10, ease: 'power2.inOut' }, 0.20);
 
   addSlideToTimeline(mainTl, slide1, 0.18, 0);
   addSlideToTimeline(mainTl, slide2, 0.42, 1);
