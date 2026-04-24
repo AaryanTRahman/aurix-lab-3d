@@ -138,11 +138,28 @@ html.wf-design-mode .spline-slider-wrapper {
 /* Grids */
 .grid-wrapper { display: grid; grid-template-columns: 2fr 7fr 4fr; width: 100%; height: 100%; gap:9px; }
 .grid-wrapper img { width: 100%; height: 100%; object-fit: cover; }
-/* Webflow background-video containers must fill their grid cell */
+/* Webflow background-video containers must fill their grid cell.
+   background:#000 kills the CSS background-image poster Webflow sets on the
+   wrapper — without this the static poster frame shows in the letterbox gap
+   when object-fit:contain is used. */
 .spline-slider-wrapper .grid-wrapper .w-background-video {
     width: 100% !important;
     height: 100% !important;
     position: relative !important;
+    background: #000 !important;
+}
+/* Hide any fallback <img> Webflow injects inside background-video wrappers */
+.spline-slider-wrapper .grid-wrapper .w-background-video > img {
+    display: none !important;
+}
+/* Dark background on every grid cell so letterbox areas show as black bars,
+   not whatever Webflow's default light colour is for that component */
+.spline-slider-wrapper .sidebar-left,
+.spline-slider-wrapper .top-box,
+.spline-slider-wrapper .center-box,
+.spline-slider-wrapper .bottom-box,
+.spline-slider-wrapper .sidebar-right {
+    background: #000 !important;
 }
 /* All videos in the slider: correct aspect ratio, no cropping, centred */
 .spline-slider-wrapper .grid-wrapper video,
@@ -244,15 +261,24 @@ html, body {
     }
 
     /* 2. Remove internal padding from Growth grid boxes */
-    .grid-wrapper.growth .sidebar-left, 
-    .grid-wrapper.growth .top-box, 
-    .grid-wrapper.growth .center-box, 
-    .grid-wrapper.growth .bottom-box, 
-    .grid-wrapper.growth .sidebar-right, 
-    .grid-wrapper.growth .w-background-video {
+    .grid-wrapper.growth .sidebar-left,
+    .grid-wrapper.growth .top-box,
+    .grid-wrapper.growth .center-box,
+    .grid-wrapper.growth .bottom-box,
+    .grid-wrapper.growth .sidebar-right {
         position: relative !important;
         min-height: 0 !important;
-        padding: 0 !important; 
+        padding: 0 !important;
+        overflow: hidden !important;
+    }
+    /* w-background-video must fill its cell — needs explicit height separate
+       from the cell rule so height:100% is not accidentally applied to cells */
+    .grid-wrapper.growth .w-background-video {
+        position: relative !important;
+        width: 100% !important;
+        height: 100% !important;
+        min-height: 0 !important;
+        padding: 0 !important;
         overflow: hidden !important;
     }
 

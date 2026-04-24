@@ -638,6 +638,7 @@ function initParticleSection() {
   function prepareParticleVideos() {
     particleSlides.forEach((slide) => {
       slide.querySelectorAll('video').forEach((video) => {
+        video.removeAttribute('poster'); // prevent static first-frame showing in letterbox
         video.loop = true;
         video.autoplay = true;
         video.preload = 'auto';
