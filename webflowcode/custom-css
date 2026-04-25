@@ -269,7 +269,7 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
 /* 1. Prevent iOS Scroll Bounce & Bleed (Fixes swinging) */
 html, body {
     overflow-x: hidden !important;
-    width: 100vw !important;
+    max-width: 100% !important;
     /* FIX: Removed overscroll-behavior to stop iOS touch-locking */
     touch-action: pan-y !important; /* Forces mobile to ALWAYS allow vertical swiping */
     -webkit-overflow-scrolling: touch !important; /* Restores pure native momentum */

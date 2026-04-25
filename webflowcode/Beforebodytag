@@ -60,7 +60,7 @@ if (lenis) {
 
 document.addEventListener('DOMContentLoaded', function() {
   gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.normalizeScroll(false);
+    ScrollTrigger.normalizeScroll(!isMobileDevice);
 
   ScrollTrigger.config({ ignoreMobileResize: true,
       limitCallbacks: true });
