@@ -802,8 +802,7 @@ function initParticleSection() {
     gsap.set(slidesContainer, {
       position: 'relative',
       width: '100%',
-      height: '100%',
-      overflow: 'visible'
+      height: '100%'
     });
   }
 
@@ -815,7 +814,6 @@ function initParticleSection() {
     yPercent: -50,
     width: '90%',
     height: 'auto',
-    overflow: 'visible',
     opacity: 0,
     visibility: 'hidden'
   });

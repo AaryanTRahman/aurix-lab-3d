@@ -146,15 +146,9 @@ html.wf-design-mode .spline-slider-wrapper {
 
 /* Clip heading/text overflow within each slide — the heading animates in from x:100
    so it enters from the slide's right edge, which is the intended slide-in effect */
-/* Desktop/tablet: let the slide wrapper stay visible so the text/button block
-   can sit outside the media grid without being clipped. */
-@media (min-width: 768px) {
-    .spline-slider-wrapper,
-    .spline-slider-wrapper .slides-container,
-    .spline-slider-wrapper .slide-item,
-    .spline-slider-wrapper .spline-slide-item {
-        overflow: visible !important;
-    }
+.spline-slider-wrapper .slide-item,
+.spline-slider-wrapper .spline-slide-item {
+    overflow: hidden !important;
 }
 
 .svg-container { height: 100vh; width: 100vw; position: relative; }
@@ -236,10 +230,29 @@ html.wf-design-mode .spline-slider-wrapper {
 .grid-wrapper.growth .top-boxes { grid-template-columns: 1fr 2fr 0fr; }
 .grid-wrapper.growth .bottom-boxes { grid-template-columns: 1fr 1fr; }
 
-@media (min-width: 1920px) { .spline-slider-wrapper .slide-item .grid-wrapper, .spline-slider-wrapper .spline-slide-item .grid-wrapper { max-width: 1400px; height: 700px; max-height: 700px; } }
+@media (min-width: 1920px) {
+    .spline-slide-heading { font-size: 3.7rem; }
+    .slide-des { padding: 0; }
+    .spline-slide-heading,
+    .slide-des,
+    .spline-slide-btn-wrapper {
+        max-width: 31rem;
+    }
+    .spline-slider-wrapper .slide-item .grid-wrapper,
+    .spline-slider-wrapper .spline-slide-item .grid-wrapper {
+        max-width: 1200px;
+        height: 620px;
+        max-height: 620px;
+    }
+}
 @media (min-width: 1440px) and (max-width: 1919px) {
     .spline-slide-heading { font-size: 3.7rem; }
     .slide-des { padding: 0; }
+    .spline-slide-heading,
+    .slide-des,
+    .spline-slide-btn-wrapper {
+        max-width: 31rem;
+    }
     .spline-slider-wrapper .slide-item .grid-wrapper,
     .spline-slider-wrapper .spline-slide-item .grid-wrapper {
         max-width: 1200px;
