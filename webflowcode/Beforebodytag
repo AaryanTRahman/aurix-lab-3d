@@ -806,19 +806,20 @@ function initParticleSection() {
     });
   }
 
-  const particleSlideWidth = particleIsMobile ? '100%' : particleIsTablet ? '92%' : window.innerWidth >= 1440 ? '96%' : '94%';
-
-  gsap.set(particleSlides, {
+  const slideSetProps = {
     position: 'absolute',
     top: '50%',
     left: '50%',
     xPercent: -50,
     yPercent: -50,
-    width: particleSlideWidth,
-    height: 'auto',
+    width: '90%',
     opacity: 0,
     visibility: 'hidden'
-  });
+  };
+  if (window.innerWidth >= 768) {
+    slideSetProps.height = Math.round(window.innerHeight * 0.80);
+  }
+  gsap.set(particleSlides, slideSetProps);
 
   for (let i = 0; i < 4; i++) {
     const el = getSlideElements(i);
@@ -991,7 +992,7 @@ const workGridSection = document.querySelector('.work-grid-section');
 const meetSection = document.querySelector('.meet-aur-section');
 const workGridItems = gsap.utils.toArray('.work-grid-item');
 if (workMeetContainer && workGridSection && meetSection && workGridItems.length > 0) {
-  gsap.set(workGridItems, { y: 0, opacity: 0 });
+  gsap.set(workGridItems, { y: 40, opacity: 0 });
   gsap.set(workGridSection, { x: "0%" });
   const meetVideoWrapper = document.querySelector('.meet-bg-video-wrapper');
   const meetMaskBox = document.querySelector('.meet-mask-box');
@@ -1069,9 +1070,10 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
       }
     });
     combinedTl.to(workGridItems, {
+      y: 0,
       opacity: 1,
-      duration: 1.2,
-      stagger: 0.12,
+      duration: 1.5,
+      stagger: 0.15,
       ease: 'power2.out'
     }, 0);
     combinedTl.to(workGridSection, {
