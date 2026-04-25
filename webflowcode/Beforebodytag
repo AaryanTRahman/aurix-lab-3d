@@ -998,65 +998,52 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
   const meetMaskBox = document.querySelector('.meet-mask-box');
   const meetSvg = meetMaskBox?.querySelector('svg');
   if (meetVideoWrapper && meetMaskBox && meetSvg) {
-    gsap.set(meetVideoWrapper, { xPercent: 100, x: 0, visibility: "visible" });
+    gsap.set(meetVideoWrapper, { x: "100%", visibility: "visible" });
     gsap.set(meetMaskBox, { 
-      xPercent: 100,
-      x: 0,
+      x: "100%",
       visibility: "visible",
       opacity: 1
     });
     const isMobileDevice = window.innerWidth < 768;
     const isTablet = window.innerWidth >= 768 && window.innerWidth < 1024;
     let maskScaleValue;
-    let maskOriginXPercent;
     if (isMobileDevice) {
       maskScaleValue = 18;
-      maskOriginXPercent = 90;
-      meetSvg.style.transformOrigin = `${maskOriginXPercent}% center`;
-      meetSvg.style.webkitTransformOrigin = `${maskOriginXPercent}% center`;
+      meetSvg.style.transformOrigin = "90% center";
+      meetSvg.style.webkitTransformOrigin = "90% center";
       gsap.set(meetSvg, {
         scale: 1,
-        transformOrigin: `${maskOriginXPercent}% center`
+        transformOrigin: "90% center"
       });
     } else if (isTablet) {
       maskScaleValue = 20;
-      maskOriginXPercent = 80;
-      meetSvg.style.transformOrigin = `${maskOriginXPercent}% center`;
-      meetSvg.style.webkitTransformOrigin = `${maskOriginXPercent}% center`;
+      meetSvg.style.transformOrigin = "80% center";
+      meetSvg.style.webkitTransformOrigin = "80% center";
       gsap.set(meetSvg, {
         scale: 1,
-        transformOrigin: `${maskOriginXPercent}% center`
+        transformOrigin: "80% center"
       });
     } else {
       maskScaleValue = 25;
-      maskOriginXPercent = 80;
-      meetSvg.style.transformOrigin = `${maskOriginXPercent}% center`;
-      meetSvg.style.webkitTransformOrigin = `${maskOriginXPercent}% center`;
+      meetSvg.style.transformOrigin = "80% center";
+      meetSvg.style.webkitTransformOrigin = "80% center";
       gsap.set(meetSvg, {
         scale: 1,
-        transformOrigin: `${maskOriginXPercent}% center`
+        transformOrigin: "80% center"
       });
     }
     const phase3Duration = isMobileDevice ? 15.0 : 3.5;
 
-    const getMeetMaskAlignmentX = () => {
-      const currentBoxX = Number(gsap.getProperty(meetMaskBox, 'x')) || 0;
-      const currentBoxXPercent = Number(gsap.getProperty(meetMaskBox, 'xPercent')) || 0;
-      const currentSvgScale = Number(gsap.getProperty(meetSvg, 'scale')) || 1;
-
-      gsap.set(meetMaskBox, { xPercent: 0, x: 0 });
-      gsap.set(meetSvg, { scale: 1 });
-
+    let maskPos = 0;
+    const updateMaskPos = () => {
       const svgRect = meetSvg.getBoundingClientRect();
-      const originScreenX = svgRect.left + (svgRect.width * (maskOriginXPercent / 100));
-      const viewportCenterX = window.innerWidth / 2;
-      const alignmentX = viewportCenterX - originScreenX;
-
-      gsap.set(meetMaskBox, { xPercent: currentBoxXPercent, x: currentBoxX });
-      gsap.set(meetSvg, { scale: currentSvgScale });
-
-      return alignmentX;
+      const viewportWidth = window.innerWidth;
+      const targetPosition = viewportWidth < 768 ? viewportWidth + 100 : viewportWidth;
+      maskPos = targetPosition - svgRect.right;
     };
+
+    updateMaskPos();
+    window.addEventListener('resize', updateMaskPos);
     
 	const combinedTl = gsap.timeline({
       scrollTrigger: {
@@ -1082,13 +1069,12 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
       ease: "power2.inOut"
     }, 1.5);
     combinedTl.to([meetVideoWrapper, meetMaskBox], {
-      xPercent: 0,
-      x: 0,
+      x: "0%",
       duration: 3.5,
       ease: "power2.inOut"
     }, 1.5);
     combinedTl.to(meetMaskBox, {
-      x: () => getMeetMaskAlignmentX(),
+      x: () => maskPos,
       duration: phase3Duration,
       ease: "none",
       onStart: () => {
