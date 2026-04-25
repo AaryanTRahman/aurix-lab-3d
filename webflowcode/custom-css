@@ -274,10 +274,21 @@ html, body {
 }
 
 /* 3. Stop Address Bar from causing Infinite Loops */
-.particle-section, .work-meet-combined-section {
+.particle-section {
     min-height: 100dvh !important; /* Dynamic viewport height prevents resize loop */
     box-sizing: border-box;
     contain: paint layout; /* Isolates the box so pins don't thrash */
+}
+
+.work-meet-combined-section {
+    box-sizing: border-box;
+}
+
+@media (max-width: 991px) {
+    .work-meet-combined-section {
+        min-height: 100dvh !important;
+        contain: paint layout;
+    }
 }
 
 /* 4. Disable touches on 3D canvas so users can safely scroll over it */
