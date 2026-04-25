@@ -146,9 +146,15 @@ html.wf-design-mode .spline-slider-wrapper {
 
 /* Clip heading/text overflow within each slide — the heading animates in from x:100
    so it enters from the slide's right edge, which is the intended slide-in effect */
-.spline-slider-wrapper .slide-item,
-.spline-slider-wrapper .spline-slide-item {
-    overflow: hidden !important;
+/* Desktop/tablet: let the slide wrapper stay visible so the text/button block
+   can sit outside the media grid without being clipped. */
+@media (min-width: 768px) {
+    .spline-slider-wrapper,
+    .spline-slider-wrapper .slides-container,
+    .spline-slider-wrapper .slide-item,
+    .spline-slider-wrapper .spline-slide-item {
+        overflow: visible !important;
+    }
 }
 
 .svg-container { height: 100vh; width: 100vw; position: relative; }
