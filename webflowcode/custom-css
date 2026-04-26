@@ -1,3 +1,6 @@
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap" rel="stylesheet">
 <style>
   .spline-slider-wrapper,
   .work-grid-item,
@@ -42,17 +45,24 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
 
 .preloader-loading-text {
   position: absolute;
-  bottom: 2.5rem;
+  bottom: 3.5rem;
   left: 50%;
   transform: translateX(-50%);
-  color: rgba(255, 255, 255, 0.5);
-  font-size: 0.7rem;
-  letter-spacing: 0.3em;
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Geist', sans-serif;
+  font-weight: 500;
+  font-size: 1.2rem;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   pointer-events: none;
   z-index: 1;
   transition: opacity 0.5s ease-out;
   white-space: nowrap;
+}
+@media (max-width: 767px) {
+  .preloader-loading-text {
+    bottom: 5rem;
+  }
 }
 html.wf-design-mode .spline-slider-wrapper {
   position: relative;
