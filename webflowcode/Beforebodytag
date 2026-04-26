@@ -386,6 +386,9 @@ document.addEventListener('DOMContentLoaded', function() {
     preloaderVideoDesktop.addEventListener('play', () => {
       if (!preloaderState.pageReady || !preloaderState.sceneReady) {
         freezeOnFirstFrame();
+      } else {
+        const loadingText = document.querySelector('.preloader-loading-text');
+        if (loadingText) loadingText.style.opacity = '0';
       }
     });
   }
