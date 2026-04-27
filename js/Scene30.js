@@ -326,7 +326,7 @@ async function initScene() {
     const buildHeroTimeline = (midPos, endPos) => {
         heroTimeline?.kill();
         resetToStartFrame();
-        const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
+        const fovEnd = isMobile() ? 35 : CAMERA_SCROLL_CONFIG.fov.end;
       
         heroTimeline = gsap.timeline({
           scrollTrigger: {
