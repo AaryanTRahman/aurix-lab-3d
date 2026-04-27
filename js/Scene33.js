@@ -34,14 +34,14 @@ const CAMERA_SCROLL_CONFIG = {
     endOffset:   new THREE.Vector3( 0,     0,     4),
   },
   mobile: {
-    startOffset: new THREE.Vector3(-2.5-10000, -0.8, 11),
+    startOffset: new THREE.Vector3(-2.5, -0.8, 11),
     midOffset:   new THREE.Vector3(-0.5, -0.5,  8.5),
     endOffset:   new THREE.Vector3( 0,    0,     7),
   },
   lookAtStart: new THREE.Vector3(1.5, 0, 0),
   lookAtMid:   new THREE.Vector3(0.1, 0, 0),
   lookAtEnd:   new THREE.Vector3(0,   0, 0),
-  fov:   { start: 56, end: 26, mobileStart: 56, mobileEnd: 55 },
+  fov:   { start: 56, end: 26, mobileStart: 35, mobileEnd: 55 },
   bloom: { start: 0.1, end: 0.01 },
   scrollDistance: "+=780",
   scrubSmoothness: 1.5
