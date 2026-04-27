@@ -34,7 +34,7 @@ const CAMERA_SCROLL_CONFIG = {
     endOffset:   new THREE.Vector3( 0,     0,     4),
   },
   mobile: {
-    startOffset: new THREE.Vector3(-2.5, -0.8, 11),
+    startOffset: new THREE.Vector3(-2.5+100, -0.8, 11),
     midOffset:   new THREE.Vector3(-0.5, -0.5,  8.5),
     endOffset:   new THREE.Vector3( 0,    0,     7),
   },
