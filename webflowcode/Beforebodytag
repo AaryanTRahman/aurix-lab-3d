@@ -1,8 +1,8 @@
 <!-- GSAP, ScrollTrigger, Swiper, and Lenis -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
-<script src="https://unpkg.com/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <script>
 (function() {
   const earlyPreloaderVideo = document.querySelector('.preloader-wrapper video, .preloader-player');
@@ -31,34 +31,34 @@ const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
 const isMobileDevice = window.innerWidth <= 767 || isTouchDevice;
 
 let lenis = null;
-lenis = new Lenis(
-  isMobileDevice
-    ? {
-        duration: 0.9,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        orientation: 'vertical',
-        smoothWheel: true,
-        smoothTouch: false,
-        infinite: false,
-      }
-    : {
-        duration: 1.2,
-        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
-        orientation: 'vertical',
-        smoothWheel: true,
-        infinite: false,
-      }
-);
-if (lenis) {
-  window.addEventListener("resize", () => {
-    clearTimeout(window.lenisResizeTimer);
-    window.lenisResizeTimer = setTimeout(() => {
-      lenis.resize();
-    }, 500);
-  });
-}
 
 document.addEventListener('DOMContentLoaded', function() {
+  lenis = new Lenis(
+    isMobileDevice
+      ? {
+          duration: 0.9,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          orientation: 'vertical',
+          smoothWheel: true,
+          smoothTouch: false,
+          infinite: false,
+        }
+      : {
+          duration: 1.2,
+          easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+          orientation: 'vertical',
+          smoothWheel: true,
+          infinite: false,
+        }
+  );
+  if (lenis) {
+    window.addEventListener("resize", () => {
+      clearTimeout(window.lenisResizeTimer);
+      window.lenisResizeTimer = setTimeout(() => {
+        lenis.resize();
+      }, 500);
+    });
+  }
   gsap.registerPlugin(ScrollTrigger);
     ScrollTrigger.normalizeScroll(!isMobileDevice);
 
@@ -110,7 +110,7 @@ document.addEventListener('DOMContentLoaded', function() {
     preloaderVideoDesktop.muted = true;
     preloaderVideoDesktop.setAttribute('muted', '');
     preloaderVideoDesktop.setAttribute('playsinline', '');
-    preloaderVideoDesktop.setAttribute('preload', 'auto');
+    preloaderVideoDesktop.setAttribute('preload', 'none');
     preloaderVideoDesktop.playsInline = true;
     preloaderVideoDesktop.autoplay = false;
     preloaderVideoDesktop.loop = false;
@@ -656,7 +656,7 @@ function initParticleSection() {
         video.removeAttribute('poster'); // prevent static first-frame showing in letterbox
         video.loop = true;
         video.autoplay = true;
-        video.preload = 'auto';
+        video.preload = 'none';
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
@@ -766,7 +766,7 @@ function initParticleSection() {
         video.defaultMuted = true;
         video.playsInline = true;
         video.autoplay = true;
-        video.preload = 'auto';
+        video.preload = 'none';
         video.setAttribute('playsinline', '');
         video.setAttribute('muted', '');
         video.setAttribute('autoplay', '');
