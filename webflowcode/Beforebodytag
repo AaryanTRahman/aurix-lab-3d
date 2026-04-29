@@ -321,8 +321,12 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   function tryStartPreloaderVideo() {
-    if (!preloaderVideoDesktop || preloaderState.videoStarted) return;
     if (!preloaderState.pageReady || !preloaderState.sceneReady) return;
+    if (!preloaderVideoDesktop) {
+      finalizePreloaderVideoState();
+      return;
+    }
+    if (preloaderState.videoStarted) return;
 
     preloaderState.videoStarted = true;
     preloaderState.videoPlaying = false;
@@ -395,21 +399,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   setTimeout(() => {
     if (hasCompletedPreloaderTransition) return;
-    if (preloaderVideoDesktop && !preloaderState.videoStarted) {
-      preloaderState.pageReady = true;
-      preloaderState.sceneReady = true;
-      tryStartPreloaderVideo();
-      setTimeout(() => {
-        if (!hasCompletedPreloaderTransition) {
-          finalizePreloaderVideoState();
-        }
-      }, 9000);
-      return;
-    }
-    if (!preloaderVideoDesktop) {
+    if (!preloaderVideoDesktop && preloaderState.pageReady && preloaderState.sceneReady) {
       finalizePreloaderVideoState();
     }
-    // Video already started — scheduleVideoPlaybackFailsafe() handles the duration-aware cutoff
   }, 5000);
 })();
 let hasStartedSequentialInit = false;

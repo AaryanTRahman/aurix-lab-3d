@@ -75,6 +75,11 @@ function notifySceneReady() {
   window.dispatchEvent(new CustomEvent('aurix:scene-ready'));
 }
 
+function notifySceneError(error) {
+  console.error('Aurix scene failed to initialize:', error);
+  notifySceneReady();
+}
+
 // --- INITIALIZE RENDERER (New Performance Config) ---
 const initialViewport = getViewportSize();
 const renderer = new THREE.WebGLRenderer({ antialias: false, alpha: true });
@@ -125,6 +130,21 @@ const toneMappingEffect = new ToneMappingEffect({
 
 composer.addPass(new EffectPass(camera, bloomEffect, vignetteEffect, toneMappingEffect));
 
+let renderQueued = false;
+
+function renderScene() {
+  composer.render(0);
+}
+
+function requestRender() {
+  if (renderQueued) return;
+  renderQueued = true;
+  requestAnimationFrame(() => {
+    renderQueued = false;
+    renderScene();
+  });
+}
+
 // // --- RESIZE EVENT HANDLING ---
 // function resizeScene() {
 //   const { width, height } = getViewportSize();
@@ -155,6 +175,8 @@ function resizeScene() {
     lastWindowWidth = window.innerWidth;
     ScrollTrigger.refresh();
   }
+
+  requestRender();
 }
 window.addEventListener('resize', resizeScene);
 
@@ -213,237 +235,219 @@ function processScene(gltf, loadedLightmaps) {
 
 // --- INIT SCENE & ASSETS ---
 async function initScene() {
-  if (!container) return;
+  if (!container) {
+    notifySceneReady();
+    return;
+  }
   const exrLoader = new EXRLoader();
 
   // Load Environment Map
-  exrLoader.load('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k_desaturated.exr', (envMap) => {
+  const envMapPromise = exrLoader.loadAsync('https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k_desaturated.exr')
+    .then((envMap) => {
     scene.environmentIntensity = 0.05;
     envMap.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = envMap;
     scene.environmentRotation.y = FX_CONFIG.hdriRotation;
-  });
+  })
+    .catch((error) => {
+      console.error('Failed to load environment map:', error);
+    });
 
   // Cached HDR Loading (Performance Update)
   const loadedLightmaps = {};
-  try {
-    const uniqueURLs = [...new Set(Object.values(LIGHTMAP_CONFIG))];
-    const textureCache = {};
-    await Promise.all(uniqueURLs.map(async (url) => {
-      const tex = await exrLoader.loadAsync(url);
-      tex.flipY = true;
-      textureCache[url] = tex;
-    }));
-    for (const [matName, hdrPath] of Object.entries(LIGHTMAP_CONFIG)) {
-      loadedLightmaps[matName] = textureCache[hdrPath];
+  const lightmapsPromise = (async () => {
+    try {
+      const uniqueURLs = [...new Set(Object.values(LIGHTMAP_CONFIG))];
+      const textureCache = {};
+      await Promise.all(uniqueURLs.map(async (url) => {
+        const tex = await exrLoader.loadAsync(url);
+        tex.flipY = true;
+        textureCache[url] = tex;
+      }));
+      for (const [matName, hdrPath] of Object.entries(LIGHTMAP_CONFIG)) {
+        loadedLightmaps[matName] = textureCache[hdrPath];
+      }
+    } catch (err) {
+      console.error("Failed to load HDR lightmaps:", err);
     }
-  } catch (err) {
-    console.error("Failed to load HDR lightmaps:", err);
-  }
+  })();
 
   const gltfLoader = new GLTFLoader();
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
-  gltfLoader.load(
-    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test20optimized.glb',
-    (gltf) => {
-      const model = gltf.scene;
-      processScene(gltf, loadedLightmaps);
+  try {
+    await Promise.all([envMapPromise, lightmapsPromise]);
+    const gltf = await gltfLoader.loadAsync(
+      'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test20optimized.glb',
+      (xhr) => {
+        const progressText = document.getElementById('loader-progress');
+        if (progressText && xhr.total) {
+          progressText.innerText = `${((xhr.loaded / xhr.total) * 100).toFixed(0)}%`;
+        }
+      }
+    );
 
-      const box = new THREE.Box3().setFromObject(model);
-      const centre = new THREE.Vector3();
-      box.getCenter(centre);
-      model.position.sub(centre);
-      scene.add(model);
-      model.updateMatrixWorld(true);
+    const model = gltf.scene;
+    processScene(gltf, loadedLightmaps);
 
-      model.traverse((node) => {
-        if (node.isSpotLight) {
-          const targetPos = new THREE.Vector3(0, 0, -1);
-          node.localToWorld(targetPos);
-          if (node.target?.parent) node.target.parent.remove(node.target);
-          node.target = new THREE.Object3D();
-          node.target.position.copy(targetPos);
-          scene.add(node.target);
+    const box = new THREE.Box3().setFromObject(model);
+    const centre = new THREE.Vector3();
+    box.getCenter(centre);
+    model.position.sub(centre);
+    scene.add(model);
+    model.updateMatrixWorld(true);
+
+    model.traverse((node) => {
+      if (node.isSpotLight) {
+        const targetPos = new THREE.Vector3(0, 0, -1);
+        node.localToWorld(targetPos);
+        if (node.target?.parent) node.target.parent.remove(node.target);
+        node.target = new THREE.Object3D();
+        node.target.position.copy(targetPos);
+        scene.add(node.target);
+      }
+    });
+
+    let startPos = null, animatedLookTarget = null, heroTimeline = null, hasRevealedScene = false;
+    let lookAtStart, lookAtMid, lookAtEnd;
+
+    const resetToStartFrame = () => {
+      if (!startPos || !animatedLookTarget || !lookAtStart) return;
+      animatedLookTarget.copy(lookAtStart);
+      camera.position.copy(startPos);
+      camera.updateProjectionMatrix();
+      bloomEffect.intensity = CAMERA_SCROLL_CONFIG.bloom.start; // New bloom logic
+      camera.lookAt(animatedLookTarget);
+      requestRender();
+    };
+
+    const buildHeroTimeline = (midPos, endPos) => {
+      heroTimeline?.kill();
+      resetToStartFrame();
+      const fovEnd = isMobile() ? CAMERA_SCROLL_CONFIG.fov.mobileEnd : CAMERA_SCROLL_CONFIG.fov.end;
+
+      heroTimeline = gsap.timeline({
+        scrollTrigger: {
+          trigger: heroSection || ".hero-section",
+          start: "top top",
+          end: CAMERA_SCROLL_CONFIG.scrollDistance,
+          scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
+          pin: true,
+          anticipatePin: 1,
+
+          // CRUCIAL: 'invalidateOnRefresh' MUST BE GONE to prevent the camera snap!
+
+          // BRINGING THIS BACK: This is what fixes your scroll wheel.
+          // Since 'invalidateOnRefresh' is gone, this will no longer break the camera!
+          onLeave: () => {
+            window.dispatchEvent(new Event('resize'));
+            requestRender();
+          },
+          onEnterBack: () => {
+            window.dispatchEvent(new Event('resize'));
+            requestRender();
+          }
+        },
+        onUpdate: () => {
+          if (animatedLookTarget) camera.lookAt(animatedLookTarget);
+          requestRender();
         }
       });
 
-      let startPos = null, animatedLookTarget = null, heroTimeline = null, hasRevealedScene = false;
-      let lookAtStart, lookAtMid, lookAtEnd;
-
-      const resetToStartFrame = () => {
-        if (!startPos || !animatedLookTarget || !lookAtStart) return;
-        animatedLookTarget.copy(lookAtStart);
-        camera.position.copy(startPos);
-        camera.updateProjectionMatrix();
-        bloomEffect.intensity = CAMERA_SCROLL_CONFIG.bloom.start; // New bloom logic
-        camera.lookAt(animatedLookTarget);
-      };
-
-      // --- THE GSAP TIMELINE (New Animations + Old Scroll Config) ---
-      // const buildHeroTimeline = (midPos, endPos) => {
-      //   heroTimeline?.kill();
-      //   resetToStartFrame();
-      //   const fovEnd = isMobile() ? 55 : CAMERA_SCROLL_CONFIG.fov.end;
-
-      //   heroTimeline = gsap.timeline({
-      //     scrollTrigger: {
-      //       trigger: heroSection || ".hero-section",
-      //       start: "top top",
-      //       end: CAMERA_SCROLL_CONFIG.scrollDistance,
-      //       scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
-      //       pin: true,
-      //       anticipatePin: 1,
-      //       // Just use this. It will automatically update the page calculations 
-      //       // when the pin finishes without needing any manual resize hacks.
-      //       invalidateOnRefresh: true 
-      //     },
-      //     onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
-      //   });
-
-      //   // New keyframe animations
-      //   heroTimeline.to(camera.position, {
-      //     keyframes: [
-      //       { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
-      //       { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
-      //     ]
-      //   }, 0);
-        
-      //   heroTimeline.to(camera, { fov: fovEnd, ease: "power2.inOut", duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
-        
-      //   heroTimeline.to(animatedLookTarget, {
-      //     keyframes: [
-      //       { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power2.inOut", duration: 1 },
-      //       { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power2.inOut", duration: 1 },
-      //     ]
-      //   }, 0);
-        
-      //   heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
-      //   heroTimeline.to('.scroll-indicator-wrapper', { opacity: 0, duration: 0.2 }, 0);
-
-      //   ScrollTrigger.refresh();
-      // };
-    const buildHeroTimeline = (midPos, endPos) => {
-        heroTimeline?.kill();
-        resetToStartFrame();
-        const fovEnd = isMobile() ? CAMERA_SCROLL_CONFIG.fov.mobileEnd : CAMERA_SCROLL_CONFIG.fov.end;
-      
-        heroTimeline = gsap.timeline({
-          scrollTrigger: {
-            trigger: heroSection || ".hero-section",
-            start: "top top",
-            end: CAMERA_SCROLL_CONFIG.scrollDistance,
-            scrub: CAMERA_SCROLL_CONFIG.scrubSmoothness,
-            pin: true,
-            anticipatePin: 1,
-            
-            // CRUCIAL: 'invalidateOnRefresh' MUST BE GONE to prevent the camera snap!
-            
-            // BRINGING THIS BACK: This is what fixes your scroll wheel.
-            // Since 'invalidateOnRefresh' is gone, this will no longer break the camera!
-            onLeave: () => {
-              window.dispatchEvent(new Event('resize'));
-            },
-            onEnterBack: () => {
-              window.dispatchEvent(new Event('resize'));
-            }
-          },
-          onUpdate: () => { if (animatedLookTarget) camera.lookAt(animatedLookTarget); }
-        });
-      
-        // ... (Keep your keyframes animations exactly as they are here)
-        heroTimeline.to(camera.position, {
-          keyframes: [
-            { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
-            { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
-          ]
-        }, 0);
-        heroTimeline.to(camera, { fov: fovEnd, ease: "power2.inOut", duration: 2, onUpdate: () => camera.updateProjectionMatrix() }, 0);
-        heroTimeline.to(animatedLookTarget, {
-          keyframes: [
-            { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power1.inOut", duration: 1 },
-            { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power1.inOut", duration: 1 },
-          ]
-        }, 0);
-        heroTimeline.to(bloomEffect, { intensity: CAMERA_SCROLL_CONFIG.bloom.end, ease: "power2.inOut", duration: 2 }, 0);
-      
-        ScrollTrigger.refresh();
-      };
-
-      // --- WEBFLOW REVEAL LOGIC (Preserved from old code) ---
-      const revealSceneWhenReady = (midPos, endPos) => {
-        if (hasRevealedScene) return;
-        hasRevealedScene = true;
-        
-        if (typeof ScrollTrigger.clearScrollMemory === 'function') {
-          ScrollTrigger.clearScrollMemory();
+      heroTimeline.to(camera.position, {
+        keyframes: [
+          { x: midPos.x, y: midPos.y, z: midPos.z, ease: "power1.in", duration: 1 },
+          { x: endPos.x, y: endPos.y, z: endPos.z, ease: "power1.out", duration: 1 },
+        ]
+      }, 0);
+      heroTimeline.to(camera, {
+        fov: fovEnd,
+        ease: "power2.inOut",
+        duration: 2,
+        onUpdate: () => {
+          camera.updateProjectionMatrix();
+          requestRender();
         }
-        
-        window.scrollTo(0, 0);
+      }, 0);
+      heroTimeline.to(animatedLookTarget, {
+        keyframes: [
+          { x: lookAtMid.x, y: lookAtMid.y, z: lookAtMid.z, ease: "power1.inOut", duration: 1 },
+          { x: lookAtEnd.x, y: lookAtEnd.y, z: lookAtEnd.z, ease: "power1.inOut", duration: 1 },
+        ]
+      }, 0);
+      heroTimeline.to(bloomEffect, {
+        intensity: CAMERA_SCROLL_CONFIG.bloom.end,
+        ease: "power2.inOut",
+        duration: 2,
+        onUpdate: requestRender
+      }, 0);
+
+      ScrollTrigger.refresh();
+      requestRender();
+    };
+
+    // --- WEBFLOW REVEAL LOGIC (Preserved from old code) ---
+    const revealSceneWhenReady = (midPos, endPos) => {
+      if (hasRevealedScene) return;
+      hasRevealedScene = true;
+
+      if (typeof ScrollTrigger.clearScrollMemory === 'function') {
+        ScrollTrigger.clearScrollMemory();
+      }
+
+      window.scrollTo(0, 0);
+
+      requestAnimationFrame(() => {
+        buildHeroTimeline(midPos, endPos);
 
         requestAnimationFrame(() => {
-          buildHeroTimeline(midPos, endPos);
-          
-          requestAnimationFrame(() => {
-            ScrollTrigger.refresh();
-            if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
-            window.dispatchEvent(new Event('resize'));
-            notifySceneReady();
-          });
+          ScrollTrigger.refresh();
+          if (heroTimeline?.scrollTrigger) heroTimeline.scrollTrigger.update();
+          window.dispatchEvent(new Event('resize'));
+          requestRender();
+          notifySceneReady();
         });
-      };
+      });
+    };
 
-      // Find the new target "Center"
-      const targetObj = model.getObjectByName('Center');
-      if (targetObj) {
-        const logoPos = new THREE.Vector3();
-        targetObj.getWorldPosition(logoPos);
-        const mobile = isMobile();
+    // Find the new target "Center"
+    const targetObj = model.getObjectByName('Center');
+    if (targetObj) {
+      const logoPos = new THREE.Vector3();
+      targetObj.getWorldPosition(logoPos);
+      const mobile = isMobile();
 
-        const offsets = mobile ? CAMERA_SCROLL_CONFIG.mobile : CAMERA_SCROLL_CONFIG.desktop;
-        startPos = logoPos.clone().add(offsets.startOffset);
-        const midPos = logoPos.clone().add(offsets.midOffset);
-        const endPos = logoPos.clone().add(offsets.endOffset);
+      const offsets = mobile ? CAMERA_SCROLL_CONFIG.mobile : CAMERA_SCROLL_CONFIG.desktop;
+      startPos = logoPos.clone().add(offsets.startOffset);
+      const midPos = logoPos.clone().add(offsets.midOffset);
+      const endPos = logoPos.clone().add(offsets.endOffset);
 
-        lookAtStart = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtStart);
-        lookAtMid   = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtMid);
-        lookAtEnd   = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtEnd);
+      lookAtStart = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtStart);
+      lookAtMid   = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtMid);
+      lookAtEnd   = logoPos.clone().add(CAMERA_SCROLL_CONFIG.lookAtEnd);
 
-        animatedLookTarget = lookAtStart.clone();
-        camera.fov = mobile ? CAMERA_SCROLL_CONFIG.fov.mobileStart : CAMERA_SCROLL_CONFIG.fov.start;
+      animatedLookTarget = lookAtStart.clone();
+      camera.fov = mobile ? CAMERA_SCROLL_CONFIG.fov.mobileStart : CAMERA_SCROLL_CONFIG.fov.start;
 
-        resetToStartFrame();
-        // Render 1 frame before reveal using the new composer
-        composer.render(0); 
-        revealSceneWhenReady(midPos, endPos);
-      } else {
-        console.warn("Object 'Center' not found in model!");
-        notifySceneReady();
-      }
-    },
-    (xhr) => {
-      const progressText = document.getElementById('loader-progress');
-      if (progressText) progressText.innerText = `${((xhr.loaded / xhr.total) * 100).toFixed(0)}%`;
-    },
-    (error) => console.error('GLTFLoader error:', error)
-  );
-}
-
-// --- RENDER LOOP ---
-const clock = new THREE.Clock();
-function animate() {
-  requestAnimationFrame(animate);
-  composer.render(clock.getDelta()); // Pass delta for postprocessing library
+      resetToStartFrame();
+      renderScene();
+      revealSceneWhenReady(midPos, endPos);
+    } else {
+      console.warn("Object 'Center' not found in model!");
+      renderScene();
+      notifySceneReady();
+    }
+  } catch (error) {
+    notifySceneError(error);
+  }
 }
 
 let hasStarted = false;
 async function startScene() {
   if (hasStarted) return;
   hasStarted = true;
-  if (!container) return;
   await initScene();
   resizeScene();
-  animate();
 }
 
 if (document.readyState === 'loading') {
