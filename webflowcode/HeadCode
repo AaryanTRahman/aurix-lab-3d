@@ -3,10 +3,11 @@
 
 <!-- Keep this css code to improve the font quality-->
 <style>
-  /* Fix font-display to prevent invisible text during load */
+  /* Override Webflow's font-display to prevent invisible text during load */
   @font-face {
     font-family: 'DM Sans';
     font-display: swap;
+    src: local('DM Sans');
   }
 
   * {
@@ -23,12 +24,9 @@
     opacity: 0;
 }
   
-  // Button 
-
   .icon-btn-wrapper{
   position: relative;
   z-index: 10;
-    transition: all 0.3s ease;
     border: 1px solid rgba(255, 255, 255, 0.15);
     transform: scale(1);
     background: rgba(225, 225, 225, 0.10);
@@ -39,26 +37,24 @@
 }
 
 .icon-btn-wrapper:hover {
-transform: translateY(-2px);
+transform: translateY(-2px) scale(1.2);
 border-color: rgba(255, 255, 255, 0.25);
-transform: scale(1.2);
 }
 
 .btn-hvr-overlay {
-position: absolute;
-    left: 0px;
-    top: 50%;
-    width: 0%;
-    height: 100%;
-    background: #1DD069;
-    filter: blur(20px);
-    opacity: 1;
-    transition: width 0.4s ease;
-    pointer-events: none;
-    transform: translateY(-50%);
-    z-index: -1;
+  position: absolute;
+  left: 0px;
+  top: 50%;
+  width: 0%;
+  height: 100%;
+  background: #1DD069;
+  filter: blur(20px);
+  opacity: .7;
+  transition: width 0.4s ease;
+  pointer-events: none;
+  transform: translateY(-50%);
+  z-index: -1;
   border-radius: 72px;
-  opacity:.7;
 } 
 
 .icon-btn-wrapper:hover .btn-hvr-overlay {
