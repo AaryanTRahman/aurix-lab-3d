@@ -1,0 +1,174 @@
+<style>
+#particle-slider {
+      position: relative;
+      width: 100%;
+      height: 500px;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    #particle-slider  .slides {
+      width: 100%;
+      height: 100%;
+    }
+
+    #particle-slider  .slide {
+      width: 100%;
+      height: 100%;
+    }
+
+   #particle-slider canvas.draw {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100% !important;
+      height: 100% !important;
+      display: block;
+    }
+
+    .dg.ac {
+      display: none !important;
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      #particle-slider {
+        height: 400px;
+        min-height: -webkit-fill-available;
+      }
+    }
+    
+        @media (max-width: 560px) {
+      #particle-slider {
+        height: 250px;
+        min-height: -webkit-fill-available;
+      }
+    }
+  </style>
+
+
+<div id="particle-slider">
+    <div class="slides">
+      <div class="slide" id="logo-slide"></div>
+    </div>
+    <canvas class="draw"></canvas>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
+<script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/23500/ps-0.9.js"></script>
+
+
+
+
+
+<script>
+(function(){
+  /* ----------  config  ---------- */
+  const container = document.getElementById('particle-slider');
+  const logoURL   = 'https://cdn.prod.website-files.com/68dd7a3e0188ffbbdbb64e40/694d6975bfd7426cb0f587de_footer-animate.png';
+  const MOBILEBP  = 768;                       // same as CSS breakpoint
+
+  /* ----------  desktop path – original behaviour  ---------- */
+  function desktopInit(src){
+    const slide = document.getElementById('logo-slide');
+    slide.setAttribute('data-src', src);       // use image as-is
+    buildPS();
+  }
+
+  /* ----------  mobile path – pre-scale to container width  ---------- */
+  function mobileInit(src){
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = ()=>{
+      const W = container.offsetWidth;
+      const scale = W / img.width;
+      const canvas  = document.createElement('canvas');
+      canvas.width  = W;
+      canvas.height = img.height * scale;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img,0,0,W,canvas.height);
+      document.getElementById('logo-slide').setAttribute('data-src', canvas.toDataURL('image/png'));
+      buildPS();
+    };
+    img.onerror = ()=> desktopInit(src);       // fallback
+    img.src = src;
+  }
+
+  /* ----------  ParticleSlider build (common)  ---------- */
+  function buildPS(){
+    /* your EXACT original ps-creation block */
+    var ps = new ParticleSlider({
+      ptlGap : 1,
+      ptlSize: 1,
+      width  : container.offsetWidth,
+      height : container.offsetHeight
+    });
+
+    /* ---- GUI (only visible on desktop – CSS already hides it on mobile) ---- */
+    var gui = new dat.GUI();
+    gui.add(ps,'ptlGap',0,5,1).onChange(function(){ps.init(true);});
+    gui.add(ps,'ptlSize',1,5,1).onChange(function(){ps.init(true);});
+    gui.add(ps,'restless');
+    gui.addColor(ps,'color').onChange(function(v){
+      ps.monochrome = true;
+      ps.setColor(v);
+      ps.init(true);
+    });
+
+    /* ---- click / tap / resize – your original handlers ---- */
+    window.addEventListener('click',   function(){ps.init(true);});
+    window.addEventListener('touchend',function(){ps.init(true);});
+    var resizeTimer;
+    window.addEventListener('resize',function(){
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function(){
+        ps.width  = container.offsetWidth;
+        ps.height = container.offsetHeight;
+        ps.ptlGap = 1;
+        ps.ptlSize= 1;
+        ps.init(true);
+      },250);
+    });
+    window.addEventListener('orientationchange',function(){
+      setTimeout(function(){
+        ps.width  = container.offsetWidth;
+        ps.height = container.offsetHeight;
+        ps.init(true);
+      },300);
+    });
+  }
+
+  /* ----------  decide which path to take ---------- */
+  function run(){
+    const isMobile = window.innerWidth <= MOBILEBP;
+    /* obtain base64 first (same as your code) */
+    convertImageToBase64(logoURL, function(b64){
+      const src = b64 || 'https://corsproxy.io/?' + encodeURIComponent(logoURL);
+      isMobile ? mobileInit(src) : desktopInit(src);
+    });
+  }
+
+  /* ----------  tiny helper – unchanged ---------- */
+  function convertImageToBase64(url, callback){
+    var img = new Image();
+    img.crossOrigin = 'Anonymous';
+    img.onload = function(){
+      var canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      var ctx = canvas.getContext('2d');
+      ctx.drawImage(img,0,0);
+      try{ callback(canvas.toDataURL('image/png')); }
+      catch(e){ callback(null); }
+    };
+    img.onerror = function(){ callback(null); };
+    img.src = url;
+  }
+
+  /* ----------  bootstrap ---------- */
+  if(document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', run);
+  }else{
+    run();
+  }
+})();
+</script>
