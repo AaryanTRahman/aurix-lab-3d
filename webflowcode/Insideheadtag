@@ -1,0 +1,155 @@
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+<style>
+.tinyflow-slider--main .swiper-wrapper,
+.tinyflow-slider--main .swiper-slide {
+  /* will-change: transform; */
+}
+
+.tinyflow-slider--main .swiper-slide {
+  width: min(80%, 1140px);
+  height: auto; 
+}
+.swiper-button-next:after,.swiper-button-prev:after,.swiper-rtl .swiper-button-prev:after {
+   display: none;
+}
+.swiper-button-prev, .swiper-button-next, .arrow-icon {
+    width: 50px !important;
+    height: 50px !important;
+}
+.swiper-button-prev, .swiper-button-next{
+    position: relative;
+}
+.swiper-button-prev, .swiper-rtl .swiper-button-next {
+    left: auto;
+    right: auto;
+}
+
+.swiper-button-next, .swiper-rtl .swiper-button-prev {
+    right: auto !important;
+    left: auto !important;
+}
+
+@media screen and (max-width: 1870px) {
+  .tinyflow-slider--main .swiper-slide {
+    width: min(80%, 1100px);
+  }
+} 
+
+@media screen and (max-width: 1640px) {
+  .tinyflow-slider--main .swiper-slide {
+    width: min(64%, 1040px);
+  }
+}  
+
+/* Tablet styles (iPad and similar) */
+@media screen and (max-width: 1024px) {
+  .tinyflow-slider--main .swiper-slide {
+    width: min(85%, 900px);
+  }
+  
+  .swiper-button-prev, 
+  .swiper-button-next, 
+  .arrow-icon {
+    width: 45px !important;
+    height: 45px !important;
+  }
+}
+
+/* Mobile landscape and smaller tablets */
+@media screen and (max-width: 768px) {
+  .tinyflow-slider--main .swiper-slide {
+    width: min(90%, 700px);
+  }
+  
+  .swiper-button-prev, 
+  .swiper-button-next, 
+  .arrow-icon {
+    width: 40px !important;
+    height: 40px !important;
+  }
+}
+
+/* Mobile portrait */
+@media screen and (max-width: 480px) {
+  .tinyflow-slider--main .swiper-slide {
+    width: 100%;
+  }
+  
+  .swiper-button-prev, 
+  .swiper-button-next, 
+  .arrow-icon {
+    width: 35px !important;
+    height: 35px !important;
+  }
+}
+
+/* Small mobile devices */
+@media screen and (max-width: 360px) {
+  .tinyflow-slider--main .swiper-slide {
+    width: 95%;
+  }
+
+  .swiper-button-prev,
+  .swiper-button-next,
+  .arrow-icon {
+    width: 30px !important;
+    height: 30px !important;
+  }
+}
+
+/* Fix preloader full-screen on mobile (100vh excludes browser address bar) */
+.preloader-wrapper {
+  height: 100dvh;
+  background: #050505;
+}
+@supports not (height: 100dvh) {
+  .preloader-wrapper {
+    height: -webkit-fill-available;
+  }
+}
+
+/* Hide the legacy Webflow background-video if it still exists.
+   The real preloader should now be a plain embedded .preloader-player. */
+html.w-mod-js .preloader-wrapper .preloader-video-desktop {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+html.w-mod-js .preloader-player {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  opacity: 0;
+  visibility: hidden;
+  background: #050505;
+}
+
+html.w-mod-js .preloader-wrapper.is-video-ready .preloader-player {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity 0.15s ease;
+}
+
+/* Safely hide elements with fallback and preserve transitions */
+html.w-mod-js .navbar-wrapper,
+html.w-mod-js .hero-content-wrapper .icon-btn-wrapper {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.8s ease-out, visibility 0.8s;
+}
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/",
+    "gsap": "https://unpkg.com/gsap@3.12.5/index.js",
+    "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js"
+  }
+}
+</script>
