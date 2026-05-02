@@ -151,7 +151,7 @@ html.w-mod-js .hero-content-wrapper .icon-btn-wrapper {
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/",
     "gsap": "https://unpkg.com/gsap@3.12.5/index.js",
     "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js",
-    "postprocessing": "https://cdn.jsdelivr.net/npm/postprocessing@6.39.1/build/index.esm.js"
+    "postprocessing": "https://unpkg.com/postprocessing@6.39.1/build/index.esm.js"
   }
 }
 </script>
