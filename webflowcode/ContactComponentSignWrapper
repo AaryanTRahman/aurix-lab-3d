@@ -26,10 +26,6 @@
       display: block;
     }
 
-    .dg.ac {
-      display: none !important;
-    }
-
     /* Responsive adjustments */
     @media (max-width: 768px) {
       #particle-slider {
@@ -54,8 +50,7 @@
     <canvas class="draw"></canvas>
   </div>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.5/dat.gui.min.js"></script>
-<script src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/23500/ps-0.9.js"></script>
+<script defer src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/23500/ps-0.9.js"></script>
 
 
 
@@ -102,17 +97,6 @@
       ptlSize: 1,
       width  : container.offsetWidth,
       height : container.offsetHeight
-    });
-
-    /* ---- GUI (only visible on desktop – CSS already hides it on mobile) ---- */
-    var gui = new dat.GUI();
-    gui.add(ps,'ptlGap',0,5,1).onChange(function(){ps.init(true);});
-    gui.add(ps,'ptlSize',1,5,1).onChange(function(){ps.init(true);});
-    gui.add(ps,'restless');
-    gui.addColor(ps,'color').onChange(function(v){
-      ps.monochrome = true;
-      ps.setColor(v);
-      ps.init(true);
     });
 
     /* ---- click / tap / resize – your original handlers ---- */
