@@ -50,7 +50,6 @@ document.addEventListener('DOMContentLoaded', function() {
   // Select ALL testimonial-item-col elements, including nested ones
   const testimonialCols = document.querySelectorAll('.testimonial-item-wrapp .testimonial-item-col, .testimonial-item-wrapp.is-altr .testimonial-item-col');
   
-  console.log('Found testimonial columns:', testimonialCols.length); // Debug log
   
   testimonialCols.forEach(col => {
     // Add cursor pointer for better UX
@@ -62,7 +61,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return;
       }
       
-      console.log('Clicked on testimonial column'); // Debug log
       this.classList.toggle('paused');
     });
   });
