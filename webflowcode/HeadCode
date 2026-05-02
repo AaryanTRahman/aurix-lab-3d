@@ -1,0 +1,173 @@
+<!-- Preconnect to Webflow CDN - saves ~100ms per request -->
+<link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin>
+
+<!-- Keep this css code to improve the font quality-->
+<style>
+  /* Fix font-display to prevent invisible text during load */
+  @font-face {
+    font-family: 'DM Sans';
+    font-display: swap;
+  }
+
+  * {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  -o-font-smoothing: antialiased;
+}
+
+  
+  .navbar-ink.w--current {
+    color: #CBBB93;
+}
+  .is-sticky a.navbar31_logo-link {
+    opacity: 0;
+}
+  
+  // Button 
+
+  .icon-btn-wrapper{
+  position: relative;
+  z-index: 10;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    transform: scale(1);
+    background: rgba(225, 225, 225, 0.10);
+    box-shadow: 0px 2px 4px -2px rgba(0, 0, 0, 0.15), 0px -1px 2px 0px rgba(0, 0, 0, 0.025) inset, 0px 1px 4px 0px rgba(245, 245, 245, 0.25) inset;
+    backdrop-filter: blur(2px);
+    -webkit-backdrop-filter: blur(2px);
+    transition: all 0.4s; 
+}
+
+.icon-btn-wrapper:hover {
+transform: translateY(-2px);
+border-color: rgba(255, 255, 255, 0.25);
+transform: scale(1.2);
+}
+
+.btn-hvr-overlay {
+position: absolute;
+    left: 0px;
+    top: 50%;
+    width: 0%;
+    height: 100%;
+    background: #1DD069;
+    filter: blur(20px);
+    opacity: 1;
+    transition: width 0.4s ease;
+    pointer-events: none;
+    transform: translateY(-50%);
+    z-index: -1;
+  border-radius: 72px;
+  opacity:.7;
+} 
+
+.icon-btn-wrapper:hover .btn-hvr-overlay {
+    width: 100%;           
+}
+
+a.icon-btn-wrapper::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    background: transparent;
+    width: calc(100% - .5em);
+    height: calc(100% - .5em);
+    top: .25em;
+    left: .25em;
+    border-radius: 72px;
+    -webkit-filter: blur(2px);
+    filter: blur(2px);
+    box-shadow: -2px -2px 2px 0px rgba(0, 0, 0, 0.075) inset;
+    mix-blend-mode: color-burn;
+    isolation: auto;
+}
+
+
+a.icon-btn-wrapper::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: 72px;
+    -webkit-filter: blur(2px);
+    filter: blur(2px);
+    box-shadow: 2px 2px 4px 0px rgba(255, 255, 255, 0.75) inset;
+    mix-blend-mode: color-burn;
+    isolation: auto;
+}
+
+.btn-icon::before {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    background: transparent;
+    width: calc(100% - .5em);
+    height: calc(100% - .5em);
+    top: .25em;
+    left: .25em;
+    border-radius: inherit;
+    -webkit-filter: blur(2px);
+    filter: blur(2px);
+    box-shadow: -2px -2px 2px 0px rgba(0, 0, 0, 0.075) inset;
+    mix-blend-mode: color-burn;
+    isolation: auto;
+}
+
+.btn-icon::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    background: transparent;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    border-radius: inherit;
+    -webkit-filter: blur(2px);
+    filter: blur(2px);
+    box-shadow: 2px 4px 2px 0px rgba(255, 255, 255, 0.75) inset;
+    mix-blend-mode: color-burn;
+    isolation: auto;
+}
+
+.btn-icon {
+    border-radius: 100%;
+    overflow: hidden;
+    position: relative;
+}
+  
+  
+  
+/* Pause on hover only for screens greater than 1024px */
+@media (min-width: 1025px) {
+  .testimonial-item-col:hover {
+    animation-play-state: paused;
+  }
+
+  .testimonial-item-wrapp .testimonial-item-col:hover {
+    animation-play-state: paused;
+  }
+
+  .testimonial-item-wrapp.is-altr .testimonial-item-col:hover {
+    animation-play-state: paused;
+  }
+}
+
+/* Pause when testimonial-item-col has paused class (for click toggle on mobile) */
+.testimonial-item-col.paused {
+  animation-play-state: paused;
+}
+
+.testimonial-item-wrapp .testimonial-item-col.paused {
+  animation-play-state: paused;
+}
+
+.testimonial-item-wrapp.is-altr .testimonial-item-col.paused {
+  animation-play-state: paused;
+}
+
+</style>

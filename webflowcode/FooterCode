@@ -1,0 +1,71 @@
+<!-- Fix LCP: Remove lazy from navbar logo and boost priority -->
+<script>
+  // Run immediately AND on DOMContentLoaded as fallback
+  function fixNavbarLogo() {
+    const navbarLogo = document.querySelector('.navbar31_logo');
+    if (navbarLogo) {
+      navbarLogo.removeAttribute('loading');
+      navbarLogo.setAttribute('fetchpriority', 'high');
+      navbarLogo.setAttribute('decoding', 'sync');
+    }
+  }
+  fixNavbarLogo();
+  document.addEventListener('DOMContentLoaded', fixNavbarLogo);
+</script>
+<script>
+  
+  const navbar = document.querySelector(".navbar-wrapper");
+
+window.addEventListener("scroll", () => {
+  if (window.scrollY > 200) { 
+    navbar.classList.add("is-sticky");
+  } else {
+    navbar.classList.remove("is-sticky");
+  }
+});
+</script>
+
+
+<script>
+$('[data-click="faq"]').click(function(){
+  if(!$(this).is('.open')){
+    $('[data-click="faq"].open').each((i, item)=>{
+      item.click();
+    });
+    $(this).addClass('open');    
+  }
+  else{
+    $(this).removeClass('open');
+  }
+});
+
+</script>
+
+
+
+<script>
+
+// Add click toggle for mobile/touch devices
+document.addEventListener('DOMContentLoaded', function() {
+  // Select ALL testimonial-item-col elements, including nested ones
+  const testimonialCols = document.querySelectorAll('.testimonial-item-wrapp .testimonial-item-col, .testimonial-item-wrapp.is-altr .testimonial-item-col');
+  
+  console.log('Found testimonial columns:', testimonialCols.length); // Debug log
+  
+  testimonialCols.forEach(col => {
+    // Add cursor pointer for better UX
+    col.style.cursor = 'pointer';
+    
+    col.addEventListener('click', function(e) {
+      // Prevent event bubbling if clicked on a link or button inside
+      if (e.target.tagName === 'A' || e.target.tagName === 'BUTTON') {
+        return;
+      }
+      
+      console.log('Clicked on testimonial column'); // Debug log
+      this.classList.toggle('paused');
+    });
+  });
+});
+  
+</script>
