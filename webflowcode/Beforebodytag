@@ -360,7 +360,10 @@ document.addEventListener('DOMContentLoaded', function() {
   }, isMobileDevice ? 2000 : 8000);
 
   Promise.all([
-    document.fonts ? document.fonts.ready.catch(() => undefined) : Promise.resolve(),
+    Promise.race([
+      document.fonts ? document.fonts.ready.catch(() => undefined) : Promise.resolve(),
+      new Promise(resolve => setTimeout(resolve, isMobileDevice ? 2000 : 5000))
+    ]),
     new Promise((resolve) => {
       if (document.readyState !== 'loading') {
         resolve();
