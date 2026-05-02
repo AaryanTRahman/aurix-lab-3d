@@ -60,10 +60,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
   }
   gsap.registerPlugin(ScrollTrigger);
-  ScrollTrigger.normalizeScroll(!isMobileDevice);
-
-  ScrollTrigger.config({ ignoreMobileResize: true,
-      limitCallbacks: true });
+  ScrollTrigger.config({ ignoreMobileResize: true, limitCallbacks: true });
 
   function syncHeroScrollIndicatorVisibility() {
     const heroScrollIndicatorWrapper = document.querySelector('.hero-section .scroll-indicator-wrapper');
