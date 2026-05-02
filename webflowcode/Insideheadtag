@@ -1,4 +1,5 @@
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
 
 <style>
 .tinyflow-slider--main .swiper-wrapper,
@@ -146,10 +147,11 @@ html.w-mod-js .hero-content-wrapper .icon-btn-wrapper {
 <script type="importmap">
 {
   "imports": {
-    "three": "https://unpkg.com/three@0.164.0/build/three.module.js",
-    "three/addons/": "https://unpkg.com/three@0.164.0/examples/jsm/",
+    "three": "https://cdn.jsdelivr.net/npm/three@0.164.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/",
     "gsap": "https://unpkg.com/gsap@3.12.5/index.js",
-    "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js"
+    "gsap/ScrollTrigger": "https://unpkg.com/gsap@3.12.5/ScrollTrigger.js",
+    "postprocessing": "https://cdn.jsdelivr.net/npm/postprocessing@6.39.1/build/index.esm.js"
   }
 }
 </script>
