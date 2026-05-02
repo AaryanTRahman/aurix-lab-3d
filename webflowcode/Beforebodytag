@@ -1,6 +1,4 @@
-<!-- GSAP, ScrollTrigger, Swiper, and Lenis -->
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<!-- Swiper and Lenis (GSAP loaded via importmap in head, exposed globally) -->
 <script defer src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <script>
@@ -59,8 +57,7 @@ document.addEventListener('DOMContentLoaded', function() {
       }, 500);
     });
   }
-  gsap.registerPlugin(ScrollTrigger);
-    ScrollTrigger.normalizeScroll(!isMobileDevice);
+  ScrollTrigger.normalizeScroll(!isMobileDevice);
 
   ScrollTrigger.config({ ignoreMobileResize: true,
       limitCallbacks: true });

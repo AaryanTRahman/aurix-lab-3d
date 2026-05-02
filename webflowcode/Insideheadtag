@@ -153,3 +153,10 @@ html.w-mod-js .hero-content-wrapper .icon-btn-wrapper {
   }
 }
 </script>
+<script type="module">
+  import gsap from 'gsap';
+  import ScrollTrigger from 'gsap/ScrollTrigger';
+  gsap.registerPlugin(ScrollTrigger);
+  window.gsap = gsap;
+  window.ScrollTrigger = ScrollTrigger;
+</script>
