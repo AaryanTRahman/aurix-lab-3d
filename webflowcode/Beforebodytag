@@ -355,6 +355,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
   window.addEventListener('aurix:scene-ready', markPreloaderSceneReady, { once: true });
 
+  setTimeout(function() {
+    if (!preloaderState.sceneReady) markPreloaderSceneReady();
+  }, isMobileDevice ? 2000 : 8000);
+
   Promise.all([
     document.fonts ? document.fonts.ready.catch(() => undefined) : Promise.resolve(),
     new Promise((resolve) => {
