@@ -52,7 +52,7 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
   font-family: 'Balkist', serif;
   font-style: italic;
   font-weight: 650;
-  font-size: 1.6rem;
+  font-size: 2.5rem;
   letter-spacing: 0.03em;
   pointer-events: none;
   z-index: 1;
@@ -69,6 +69,32 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
 @media (max-width: 767px) {
   .preloader-loading-text {
     bottom: 5rem;
+    font-size: 1.6rem;
+  }
+}
+
+.preloader-loading-subscript {
+  position: absolute;
+  bottom: 3rem;
+  left: 50%;
+  transform: translateX(calc(-50% + 10px));
+  color: #ffefc6;
+  font-family: 'Geist', sans-serif;
+  font-style: italic;
+  font-weight: 650;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  opacity: 0.45;
+  pointer-events: none;
+  z-index: 1;
+  transition: opacity 0.5s ease-out;
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) {
+  .preloader-loading-subscript {
+    bottom: 3.5rem;
+    font-size: 0.75rem;
   }
 }
 html.wf-design-mode .spline-slider-wrapper {

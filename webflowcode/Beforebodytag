@@ -398,6 +398,9 @@ document.addEventListener('DOMContentLoaded', function() {
       } else {
         const loadingText = document.querySelector('.preloader-loading-text');
         if (loadingText) loadingText.style.opacity = '0';
+
+        const loadingSubscript = document.querySelector('.preloader-loading-subscript');
+        if (loadingSubscript) loadingSubscript.style.opacity = '0';
       }
     });
   }
