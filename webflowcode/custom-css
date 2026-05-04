@@ -21,82 +21,13 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
   width: 100%;
   height: 100%;
   z-index: 9999;
-  background: #000;
+  background: #050505;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
 }
 
-.preloader-video-desktop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-.preloader-wrapper .w-background-video {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-}
-
-.preloader-loading-text {
-  position: absolute;
-  bottom: 4.5rem;
-  left: 50%;
-  transform: translateX(calc(-50% + 10px));
-  color: #ffefc6;
-  font-family: 'Balkist', serif;
-  font-style: italic;
-  font-weight: 650;
-  font-size: 2.5rem;
-  letter-spacing: 0.03em;
-  pointer-events: none;
-  z-index: 1;
-  transition: opacity 0.5s ease-out;
-  white-space: nowrap;
-  text-shadow:
-    0 0 4px #cbbb93,
-    0 0 12px rgba(203, 187, 147, 0.85),
-    0 0 24px rgba(203, 187, 147, 0.65),
-    0 0 48px rgba(203, 187, 147, 0.4),
-    0 0 80px rgba(203, 187, 147, 0.2),
-    0px 10px 10px rgba(0, 0, 0, 0.9);
-}
-@media (max-width: 767px) {
-  .preloader-loading-text {
-    bottom: 5rem;
-    font-size: 1.6rem;
-  }
-}
-
-.preloader-loading-subscript {
-  position: absolute;
-  bottom: 3rem;
-  left: 50%;
-  transform: translateX(calc(-50% + 10px));
-  color: #ffefc6;
-  font-family: 'Geist', sans-serif;
-  /* font-style: italic; */
-  font-weight: 650;
-  font-size: 0.85rem;
-  letter-spacing: 0.03em;
-  opacity: 0.75;
-  pointer-events: none;
-  z-index: 1;
-  transition: opacity 0.5s ease-out;
-  white-space: nowrap;
-}
-
-@media (max-width: 767px) {
-  .preloader-loading-subscript {
-    bottom: 3.5rem;
-    font-size: 0.75rem;
-  }
-}
 html.wf-design-mode .spline-slider-wrapper {
   position: relative;
 }

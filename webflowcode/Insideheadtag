@@ -110,31 +110,104 @@
   }
 }
 
-/* Hide the legacy Webflow background-video if it still exists.
-   The real preloader should now be a plain embedded .preloader-player. */
-html.w-mod-js .preloader-wrapper .preloader-video-desktop {
-  opacity: 0 !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-}
-
-html.w-mod-js .preloader-player {
+/* ── GSAP Preloader layout (planks + brand) ── */
+#planks-overlay {
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+  z-index: 1;
   display: block;
-  opacity: 0;
-  visibility: hidden;
+  pointer-events: none;
+}
+.plank-l, .plank-r {
+  position: absolute;
+  width: 50.2%;
   background: #050505;
 }
+.plank-l { left: 0; }
+.plank-r { right: 0; }
 
-html.w-mod-js .preloader-wrapper.is-video-ready .preloader-player {
-  opacity: 1;
-  visibility: visible;
-  transition: opacity 0.15s ease;
+#preloader-brand {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: transparent;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+.pl-brand {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(0.8rem, 2vw, 1.4rem);
+  position: relative;
+  z-index: 1;
+}
+.pl-logo {
+  width: clamp(130px, 15vw, 200px);
+  height: auto;
+  object-fit: contain;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 24px rgba(203,187,147,0.4))
+          drop-shadow(0 0 60px rgba(203,187,147,0.4));
+}
+.pl-sig-wrap { will-change: opacity; overflow: visible; }
+.pl-sig-wrap svg {
+  display: block;
+  width: clamp(120px, 16vw, 200px);
+  height: auto;
+  overflow: visible;
+}
+.pl-loader {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  opacity: 0;
+  will-change: opacity;
+}
+.pl-dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #cbbb93;
+  animation: plDotPulse 1.3s ease-in-out infinite;
+}
+.pl-dot:nth-child(1) { animation-delay: 0.00s; }
+.pl-dot:nth-child(2) { animation-delay: 0.22s; }
+.pl-dot:nth-child(3) { animation-delay: 0.44s; }
+@keyframes plDotPulse {
+  0%, 100% { opacity: 0.2; transform: scale(0.7); }
+  50%       { opacity: 1;   transform: scale(1);   }
+}
+.pl-bottom {
+  position: absolute;
+  bottom: 3.5rem;
+  left: 0;
+  width: 100%;
+  z-index: 2;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+.pl-progress-track {
+  width: 28%;
+  min-width: 160px;
+  height: 4px;
+  background: rgba(203,187,147,0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.pl-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: #cbbb93;
+  border-radius: 4px;
+  will-change: width;
+}
+html.wf-design-mode #planks-overlay,
+html.wf-design-mode #preloader-brand { display: none !important; }
 
 /* Safely hide elements with fallback and preserve transitions */
 html.w-mod-js .navbar-wrapper,
