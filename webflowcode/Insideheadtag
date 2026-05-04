@@ -156,8 +156,8 @@
   animation: pl-dots-in 0.4s ease-out 1.5s forwards;
 }
 .pl-dot {
-  width: 3px;
-  height: 3px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   background: #cbbb93;
   animation: plDotPulse 1.3s ease-in-out infinite;
@@ -174,18 +174,18 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-90deg);
-  width: clamp(420px, 60vmin, 680px);
+  width: clamp(300px, 42vmin, 500px);
   height: auto;
   pointer-events: none;
   z-index: 0;
 }
 .pl-ring-track {
   stroke: rgba(203, 187, 147, 0.12);
-  stroke-width: 3;
+  stroke-width: 5;
 }
 .pl-ring-fill {
   stroke: #cbbb93;
-  stroke-width: 3;
+  stroke-width: 5;
   stroke-linecap: round;
   stroke-dasharray: 1382;
   stroke-dashoffset: 1382;
