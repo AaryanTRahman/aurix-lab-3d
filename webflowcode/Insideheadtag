@@ -218,18 +218,18 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-90deg);
-  width: clamp(320px, 38vmin, 480px);
+  width: clamp(420px, 60vmin, 680px);
   height: auto;
   pointer-events: none;
   z-index: 0;
 }
 .pl-ring-track {
   stroke: rgba(203, 187, 147, 0.12);
-  stroke-width: 1.5;
+  stroke-width: 3;
 }
 .pl-ring-fill {
   stroke: #cbbb93;
-  stroke-width: 1.5;
+  stroke-width: 3;
   stroke-linecap: round;
   stroke-dasharray: 1382;
   stroke-dashoffset: 1382;
