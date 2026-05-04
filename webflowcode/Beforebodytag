@@ -36,6 +36,13 @@ const isMobileDevice = window.innerWidth <= 767 || isTouchDevice;
 let lenis = null;
 
 document.addEventListener('DOMContentLoaded', function() {
+  // Lazy-load all images not in the initial viewport
+  document.querySelectorAll('img:not([fetchpriority="high"]):not([loading])').forEach(function(img) {
+    if (!img.closest('.hero-section, .preloader-wrapper, .navbar-wrapper, .navbar31_component')) {
+      img.loading = 'lazy';
+    }
+  });
+
   lenis = new Lenis(
     isMobileDevice
       ? {
@@ -721,9 +728,8 @@ function initParticleSection() {
     let bestOpacity = -1;
 
     particleSlides.forEach((slide, index) => {
-      const styles = window.getComputedStyle(slide);
-      if (styles.visibility === 'hidden' || styles.display === 'none') return;
-      const opacity = Number.parseFloat(styles.opacity || '0');
+      if (slide.style.visibility === 'hidden') return;
+      const opacity = Number.parseFloat(slide.style.opacity || '0');
       if (opacity >= bestOpacity) {
         bestOpacity = opacity;
         bestIndex = index;
