@@ -158,6 +158,7 @@
   opacity: 0;
   transform-origin: center center;
   animation: pl-logo-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+  z-index: 2;
 }
 /* Mask-overlay wipe: transform:scaleX is guaranteed compositor-accelerated on all browsers.
    The cover div slides away from right→left (scaleX 1→0, origin right) to reveal the SVG. */
@@ -168,6 +169,7 @@
 .pl-sig-wrap {
   position: relative;
   overflow: visible;
+  z-index: 1;
 }
 .pl-sig-wrap svg {
   display: block;
