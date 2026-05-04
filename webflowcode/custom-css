@@ -80,11 +80,11 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
   transform: translateX(calc(-50% + 10px));
   color: #ffefc6;
   font-family: 'Geist', sans-serif;
-  font-style: italic;
+  /* font-style: italic; */
   font-weight: 650;
   font-size: 0.85rem;
   letter-spacing: 0.03em;
-  opacity: 0.45;
+  opacity: 0.75;
   pointer-events: none;
   z-index: 1;
   transition: opacity 0.5s ease-out;
