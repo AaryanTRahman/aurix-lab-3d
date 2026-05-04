@@ -206,6 +206,13 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('pl-loader'),
         progressTrack
       ].filter(Boolean);
+      // CSS animation fill-mode sits above inline styles in the cascade and blocks GSAP's opacity tween.
+      // Snapshot current opacity, cancel the animation, then restore it so GSAP can take over cleanly.
+      brandEls.forEach(el => {
+        const op = window.getComputedStyle(el).opacity;
+        el.style.animation = 'none';
+        el.style.opacity = op;
+      });
       if (brandEls.length) gsap.to(brandEls, { opacity: 0, duration: 0.55, ease: 'power2.inOut' });
       const maxPlankTime = CFG.plankDelayMax + CFG.plankDurMin + CFG.plankDurMax;
       plankPairs.forEach(([l, r]) => {

@@ -159,18 +159,32 @@
   transform-origin: center center;
   animation: pl-logo-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
-@keyframes pl-sig-sweep {
-  from { clip-path: inset(-20px 100% -20px -4px); }
-  to   { clip-path: inset(-20px   0% -20px -4px); }
+/* Mask-overlay wipe: transform:scaleX is guaranteed compositor-accelerated on all browsers.
+   The cover div slides away from right→left (scaleX 1→0, origin right) to reveal the SVG. */
+@keyframes pl-sig-wipe {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
 }
-.pl-sig-wrap { overflow: visible; }
+.pl-sig-wrap {
+  position: relative;
+  overflow: visible;
+}
 .pl-sig-wrap svg {
   display: block;
   width: clamp(120px, 16vw, 200px);
   height: auto;
   overflow: visible;
-  clip-path: inset(-20px 100% -20px -4px);
-  animation: pl-sig-sweep 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+}
+.pl-sig-cover {
+  position: absolute;
+  top: -20px;
+  left: 0;
+  right: 0;
+  bottom: -20px;
+  background: #050505;
+  transform-origin: right center;
+  animation: pl-sig-wipe 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
+  pointer-events: none;
 }
 @keyframes pl-dots-in {
   to { opacity: 1; }
