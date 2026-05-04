@@ -202,7 +202,9 @@ document.addEventListener('DOMContentLoaded', function() {
       completeTransition();
     };
     preloaderVideo.addEventListener('ended', onEnded);
-    preloaderVideo.play().catch(() => completeTransition());
+    preloaderVideo.muted = true;
+    preloaderVideo.volume = 0;
+    preloaderVideo.play().catch(() => { /* autoplay blocked — timeout fallback handles completion */ });
     const dur = preloaderVideo.duration;
     setTimeout(() => { if (!hasCompleted) completeTransition(); },
       (dur && isFinite(dur)) ? dur * 1000 + 2000 : 8000);
