@@ -231,6 +231,7 @@ document.addEventListener('DOMContentLoaded', function() {
       const brandEls = [
         document.getElementById('pl-logo'),
         document.getElementById('pl-loader'),
+        document.getElementById('pl-brand-shadow'),
         progressTrack
       ].filter(Boolean);
       // CSS animation fill-mode overrides GSAP inline opacity — cancel it first so GSAP can tween cleanly

@@ -1,6 +1,7 @@
 <!-- Brand overlay: logo + dots + progress ring (sits on top of preloader video) -->
 <div id="preloader-brand">
   <div class="pl-brand" id="pl-brand-inner">
+    <div id="pl-brand-shadow"></div>
 
     <img src="https://cdn.prod.website-files.com/69dbcca242222c02b829a57b/69f898bae44b7640b88b3afb_White-Gold-icon.png" class="pl-logo" id="pl-logo" alt="Aurix"
          width="260" height="260" fetchpriority="high" decoding="async" />
