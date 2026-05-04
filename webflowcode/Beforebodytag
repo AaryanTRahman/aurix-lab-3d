@@ -87,17 +87,14 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 (function () {
   const CFG = {
-    sigRevealSecs: 1.0,
     holdSeconds:   0.3,
     plankCount:    12,
     plankDelayMax: 0.35,
     plankDurMin:   0.45,
     plankDurMax:   0.35,
   };
-  const SVG_WIDTH      = 178;
-  const sigStart       = 0.5;
-  const loadStart      = sigStart + CFG.sigRevealSecs; // 1.5s
-  const MIN_DISPLAY_MS = (loadStart + 0.6) * 1000;     // ~2100ms
+  // Must be >= CSS animation end time: logo ends ~0.9s, sig ends ~1.5s, dots fade ~1.9s
+  const MIN_DISPLAY_MS = 2100;
 
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
   const heroIconBtn      = document.querySelector('.hero-content-wrapper .icon-btn-wrapper');
@@ -179,31 +176,19 @@ document.addEventListener('DOMContentLoaded', function() {
       plankPairs.push([pl, pr]);
     }
   }
+  // Make wrapper transparent now — planks (CSS background:#050505) fully cover the viewport.
+  // CSS animations for logo/sig/dots start immediately without waiting for GSAP.
+  if (preloaderWrapper) preloaderWrapper.style.background = 'transparent';
 
   function runPreloader() {
-    const logoEl        = document.getElementById('pl-logo');
-    const sigWrap       = document.getElementById('pl-sig-wrap');
-    const loaderEl      = document.getElementById('pl-loader');
-    const clipRect      = document.getElementById('pl-clip-rect');
     const progressEl    = document.getElementById('pl-progress-fill');
     const progressTrack = progressEl ? progressEl.parentElement : null;
 
     if (typeof gsap === 'undefined') { completeTransition(); return; }
 
-    preloaderWrapper.style.background = 'transparent';
-
-    if (logoEl)        gsap.set(logoEl,        { opacity: 0, scale: 0.88, transformOrigin: 'center center' });
-    if (sigWrap)       gsap.set(sigWrap,        { opacity: 1 });
-    if (loaderEl)      gsap.set(loaderEl,       { opacity: 0 });
-    if (clipRect)      gsap.set(clipRect,       { attr: { width: 0 } });
-    if (progressEl)    gsap.set(progressEl,     { width: '0%' });
-    if (progressTrack) gsap.set(progressTrack,  { opacity: 1 });
+    if (progressEl)    gsap.set(progressEl,    { width: '0%' });
+    if (progressTrack) gsap.set(progressTrack, { opacity: 1 });
     plankPairs.forEach(([l, r]) => gsap.set([l, r], { x: 0 }));
-
-    const tl = gsap.timeline();
-    if (logoEl)   tl.to(logoEl,   { opacity: 1, scale: 1, duration: 0.85, ease: 'power3.out' }, 0);
-    if (clipRect) tl.to(clipRect, { attr: { width: SVG_WIDTH }, duration: CFG.sigRevealSecs, ease: 'power2.inOut' }, sigStart);
-    if (loaderEl) tl.to(loaderEl, { opacity: 1, duration: 0.4, ease: 'power2.out' }, loadStart);
 
     let lastProgress = 0;
     function setBarProgress(p) {
@@ -215,7 +200,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function triggerExit() {
       if (hasCompleted) return;
-      const brandEls = [logoEl, sigWrap, loaderEl, progressTrack].filter(Boolean);
+      const brandEls = [
+        document.getElementById('pl-logo'),
+        document.getElementById('pl-sig-wrap'),
+        document.getElementById('pl-loader'),
+        progressTrack
+      ].filter(Boolean);
       if (brandEls.length) gsap.to(brandEls, { opacity: 0, duration: 0.55, ease: 'power2.inOut' });
       const maxPlankTime = CFG.plankDelayMax + CFG.plankDurMin + CFG.plankDurMax;
       plankPairs.forEach(([l, r]) => {
@@ -244,16 +234,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   lockScrolling();
 
-  Promise.all([
-    new Promise(resolve => {
-      const wait = () => typeof gsap !== 'undefined' ? resolve() : requestAnimationFrame(wait);
-      requestAnimationFrame(wait);
-    }),
-    Promise.race([
-      document.fonts ? document.fonts.ready.catch(() => {}) : Promise.resolve(),
-      new Promise(r => setTimeout(r, isMobileDevice ? 2000 : 4000))
-    ])
-  ]).then(runPreloader);
+  // CSS handles logo/sig/dots animations immediately — only wait for GSAP (needed for progress bar + plank exit)
+  const waitForGsap = () => typeof gsap !== 'undefined' ? runPreloader() : requestAnimationFrame(waitForGsap);
+  requestAnimationFrame(waitForGsap);
 
   setTimeout(() => {
     if (!hasCompleted) { sceneIsReady = true; timelineIsReady = true; completeTransition(); }
