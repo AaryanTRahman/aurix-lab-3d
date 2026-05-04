@@ -129,6 +129,15 @@
   position: relative;
   z-index: 1;
 }
+.pl-brand::before {
+  content: '';
+  position: absolute;
+  inset: -90px -130px;
+  background: radial-gradient(ellipse at center, rgba(5, 5, 5, 0.82) 25%, transparent 72%);
+  filter: blur(28px);
+  z-index: -1;
+  pointer-events: none;
+}
 /* CSS animations run on the compositor thread — immune to main-thread blocking by WebGL/3D init */
 @keyframes pl-logo-in {
   from { opacity: 0; transform: scale(0.88); }
