@@ -136,6 +136,8 @@
   filter: blur(28px);
   z-index: -1;
   pointer-events: none;
+  opacity: 0;
+  animation: pl-logo-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
 }
 /* CSS animations run on the compositor thread — immune to main-thread blocking by WebGL/3D init */
 @keyframes pl-logo-in {
