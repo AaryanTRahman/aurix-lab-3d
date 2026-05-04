@@ -174,7 +174,7 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(-90deg);
-  width: clamp(300px, 42vmin, 500px);
+  width: clamp(300px, 42vmin, 500px); /* mobile */
   height: auto;
   pointer-events: none;
   z-index: 0;
@@ -190,6 +190,9 @@
   stroke-dasharray: 1382;
   stroke-dashoffset: 1382;
   will-change: stroke-dashoffset;
+}
+@media (min-width: 768px) {
+  .pl-ring { width: clamp(420px, 60vmin, 680px); } /* desktop — restore original size */
 }
 html.wf-design-mode #preloader-brand { display: none !important; }
 

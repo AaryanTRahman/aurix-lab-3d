@@ -165,11 +165,22 @@ document.addEventListener('DOMContentLoaded', function() {
   function completeTransition() {
     if (hasCompleted) return;
     hasCompleted = true;
-    preloaderWrapper.style.display = 'none';
+    startSequentialSectionInit();
     if (navbar)      { navbar.style.opacity = '1'; navbar.style.visibility = 'visible'; }
     if (heroIconBtn) { heroIconBtn.style.opacity = '1'; heroIconBtn.style.visibility = 'visible'; }
-    startSequentialSectionInit();
-    setTimeout(enableScrolling, 300);
+    if (typeof gsap !== 'undefined') {
+      preloaderWrapper.style.pointerEvents = 'none';
+      gsap.to(preloaderWrapper, {
+        opacity: 0,
+        duration: 0.9,
+        ease: 'power2.inOut',
+        onComplete: () => { preloaderWrapper.style.display = 'none'; }
+      });
+      setTimeout(enableScrolling, 450);
+    } else {
+      preloaderWrapper.style.display = 'none';
+      setTimeout(enableScrolling, 300);
+    }
   }
 
   // Release video pause guard, play video, wait for it to end then call completeTransition
