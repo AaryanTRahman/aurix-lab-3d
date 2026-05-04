@@ -37,9 +37,8 @@
     </div>
   </div>
 
-  <div class="pl-bottom" id="pl-bottom">
-    <div class="pl-progress-track">
-      <div class="pl-progress-fill" id="pl-progress-fill"></div>
-    </div>
-  </div>
+  <svg class="pl-ring" id="pl-ring" viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle class="pl-ring-track" cx="240" cy="240" r="220"/>
+    <circle class="pl-ring-fill" id="pl-ring-fill" cx="240" cy="240" r="220"/>
+  </svg>
 </div>

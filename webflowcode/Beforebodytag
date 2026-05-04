@@ -181,12 +181,13 @@ document.addEventListener('DOMContentLoaded', function() {
   if (preloaderWrapper) preloaderWrapper.style.background = 'transparent';
 
   function runPreloader() {
-    const progressEl    = document.getElementById('pl-progress-fill');
-    const progressTrack = progressEl ? progressEl.parentElement : null;
+    const progressEl    = document.getElementById('pl-ring-fill');
+    const progressTrack = document.getElementById('pl-ring');
+    const CIRCUMFERENCE = 1382;
 
     if (typeof gsap === 'undefined') { completeTransition(); return; }
 
-    if (progressEl)    gsap.set(progressEl,    { width: '0%' });
+    if (progressEl)    gsap.set(progressEl,    { strokeDashoffset: CIRCUMFERENCE });
     if (progressTrack) gsap.set(progressTrack, { opacity: 1 });
     plankPairs.forEach(([l, r]) => gsap.set([l, r], { x: 0 }));
 
@@ -194,7 +195,7 @@ document.addEventListener('DOMContentLoaded', function() {
     function setBarProgress(p) {
       if (!progressEl || p <= lastProgress) return;
       lastProgress = p;
-      gsap.to(progressEl, { width: (Math.min(1, p) * 100) + '%', duration: 0.5, ease: 'power1.out', overwrite: 'auto' });
+      gsap.to(progressEl, { strokeDashoffset: CIRCUMFERENCE * (1 - Math.min(1, p)), duration: 0.5, ease: 'power1.out', overwrite: 'auto' });
     }
     window.addEventListener('aurix:scene-progress', (e) => setBarProgress(e.detail?.progress ?? 0));
 
