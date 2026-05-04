@@ -273,9 +273,11 @@ document.addEventListener('DOMContentLoaded', function() {
 let hasStartedSequentialInit = false;
 
   function scheduleSectionInit(initFn, delay) {
-    window.setTimeout(() => {
-      initFn();
-    }, delay);
+    if (typeof requestIdleCallback !== 'undefined') {
+      setTimeout(() => requestIdleCallback(initFn, { timeout: 2000 }), delay);
+    } else {
+      window.setTimeout(initFn, delay);
+    }
   }
 
     

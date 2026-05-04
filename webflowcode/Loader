@@ -3,7 +3,7 @@
   <div class="pl-brand" id="pl-brand-inner">
 
     <img src="https://cdn.prod.website-files.com/69dbcca242222c02b829a57b/69f898bae44b7640b88b3afb_White-Gold-icon.png" class="pl-logo" id="pl-logo" alt="Aurix"
-         fetchpriority="high" decoding="async" />
+         width="260" height="260" fetchpriority="high" decoding="async" />
 
     <div class="pl-loader" id="pl-loader">
       <div class="pl-dot"></div>
