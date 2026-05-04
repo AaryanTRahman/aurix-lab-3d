@@ -16,6 +16,20 @@
   });
 })();
 
+// Pause preloader video immediately — hold first frame until loading overlay exits
+(function() {
+  var v = document.querySelector('.preloader-wrapper video');
+  if (!v) return;
+  v.__aurPaused = true;
+  v.removeAttribute('loop');
+  v.pause();
+  v.currentTime = 0;
+  v.addEventListener('play', function onPlay() {
+    if (v.__aurPaused) { v.pause(); v.currentTime = 0; }
+    else { v.removeEventListener('play', onPlay); }
+  });
+})();
+
 const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
 const isMobileDevice = window.innerWidth <= 767 || isTouchDevice;
 
@@ -86,19 +100,14 @@ document.addEventListener('DOMContentLoaded', function() {
     safeScrollTriggerRefresh();
   });
 (function () {
-  const CFG = {
-    holdSeconds:   0.3,
-    plankCount:    12,
-    plankDelayMax: 0.35,
-    plankDurMin:   0.45,
-    plankDurMax:   0.35,
-  };
-  // Must be >= CSS animation end time: logo ends ~0.9s, sig ends ~1.5s, dots fade ~1.9s
-  const MIN_DISPLAY_MS = 2100;
+  const CFG = { holdSeconds: 0.3 };
+  // Minimum ms: logo ends ~0.9s, dots appear ~1.9s — ensure animation plays before exit
+  const MIN_DISPLAY_MS = 1500;
 
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
   const heroIconBtn      = document.querySelector('.hero-content-wrapper .icon-btn-wrapper');
   const navbar           = document.querySelector('.navbar-wrapper');
+  const preloaderVideo   = preloaderWrapper ? preloaderWrapper.querySelector('video') : null;
 
   if (!preloaderWrapper) {
     startSequentialSectionInit();
@@ -107,6 +116,7 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 
   let hasCompleted     = false;
+  let overlayDone      = false;
   let sceneIsReady     = false;
   let timelineIsReady  = false;
   let scrollLockActive = false;
@@ -162,34 +172,32 @@ document.addEventListener('DOMContentLoaded', function() {
     setTimeout(enableScrolling, 300);
   }
 
-  const planksEl   = document.getElementById('planks-overlay');
-  const plankPairs = [];
-  if (planksEl) {
-    for (let i = 0; i < CFG.plankCount; i++) {
-      const top = (i / CFG.plankCount) * 100;
-      const h   = (1 / CFG.plankCount) * 100 + 0.15;
-      const pl  = document.createElement('div');
-      const pr  = document.createElement('div');
-      pl.className = 'plank-l'; pl.style.cssText = `top:${top}%;height:${h}%;`;
-      pr.className = 'plank-r'; pr.style.cssText = `top:${top}%;height:${h}%;`;
-      planksEl.append(pl, pr);
-      plankPairs.push([pl, pr]);
-    }
+  // Release video pause guard, play video, wait for it to end then call completeTransition
+  function startVideoAndWait() {
+    if (hasCompleted) return;
+    if (!preloaderVideo) { completeTransition(); return; }
+    if (preloaderVideo.__aurPaused !== undefined) preloaderVideo.__aurPaused = false;
+    preloaderVideo.removeAttribute('loop');
+    preloaderVideo.currentTime = 0;
+    const onEnded = () => {
+      preloaderVideo.removeEventListener('ended', onEnded);
+      completeTransition();
+    };
+    preloaderVideo.addEventListener('ended', onEnded);
+    preloaderVideo.play().catch(() => completeTransition());
+    const dur = preloaderVideo.duration;
+    setTimeout(() => { if (!hasCompleted) completeTransition(); },
+      (dur && isFinite(dur)) ? dur * 1000 + 2000 : 8000);
   }
-  // Make wrapper transparent now — planks (CSS background:#050505) fully cover the viewport.
-  // CSS animations for logo/sig/dots start immediately without waiting for GSAP.
-  if (preloaderWrapper) preloaderWrapper.style.background = 'transparent';
 
   function runPreloader() {
     const progressEl    = document.getElementById('pl-ring-fill');
     const progressTrack = document.getElementById('pl-ring');
     const CIRCUMFERENCE = 1382;
 
-    if (typeof gsap === 'undefined') { completeTransition(); return; }
+    if (typeof gsap === 'undefined') { startVideoAndWait(); return; }
 
-    if (progressEl)    gsap.set(progressEl,    { strokeDashoffset: CIRCUMFERENCE });
-    if (progressTrack) gsap.set(progressTrack, { opacity: 1 });
-    plankPairs.forEach(([l, r]) => gsap.set([l, r], { x: 0 }));
+    if (progressEl) gsap.set(progressEl, { strokeDashoffset: CIRCUMFERENCE });
 
     let lastProgress = 0;
     function setBarProgress(p) {
@@ -199,36 +207,31 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     window.addEventListener('aurix:scene-progress', (e) => setBarProgress(e.detail?.progress ?? 0));
 
-    function triggerExit() {
-      if (hasCompleted) return;
+    function triggerOverlayExit() {
+      if (overlayDone) return;
+      overlayDone = true;
       const brandEls = [
         document.getElementById('pl-logo'),
-        document.getElementById('pl-sig-wrap'),
         document.getElementById('pl-loader'),
         progressTrack
       ].filter(Boolean);
-      // CSS animation fill-mode sits above inline styles in the cascade and blocks GSAP's opacity tween.
-      // Snapshot current opacity, cancel the animation, then restore it so GSAP can take over cleanly.
+      // CSS animation fill-mode overrides GSAP inline opacity — cancel it first so GSAP can tween cleanly
       brandEls.forEach(el => {
         const op = window.getComputedStyle(el).opacity;
         el.style.animation = 'none';
         el.style.opacity = op;
       });
-      if (brandEls.length) gsap.to(brandEls, { opacity: 0, duration: 0.55, ease: 'power2.inOut' });
-      const maxPlankTime = CFG.plankDelayMax + CFG.plankDurMin + CFG.plankDurMax;
-      plankPairs.forEach(([l, r]) => {
-        const delay = Math.random() * CFG.plankDelayMax;
-        const dur   = CFG.plankDurMin + Math.random() * CFG.plankDurMax;
-        gsap.to(l, { x: '-100%', duration: dur, delay, ease: 'power2.inOut' });
-        gsap.to(r, { x:  '100%', duration: dur, delay, ease: 'power2.inOut' });
-      });
-      setTimeout(completeTransition, (maxPlankTime + 0.05) * 1000);
+      if (brandEls.length) {
+        gsap.to(brandEls, { opacity: 0, duration: 0.55, ease: 'power2.inOut', onComplete: startVideoAndWait });
+      } else {
+        startVideoAndWait();
+      }
     }
 
     function attemptExit() {
       if (!sceneIsReady || !timelineIsReady) return;
       setBarProgress(1);
-      setTimeout(triggerExit, CFG.holdSeconds * 1000 + 300);
+      setTimeout(triggerOverlayExit, CFG.holdSeconds * 1000 + 300);
     }
 
     setTimeout(() => { timelineIsReady = true; attemptExit(); }, MIN_DISPLAY_MS);
@@ -242,7 +245,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
   lockScrolling();
 
-  // CSS handles logo/sig/dots animations immediately — only wait for GSAP (needed for progress bar + plank exit)
   const waitForGsap = () => typeof gsap !== 'undefined' ? runPreloader() : requestAnimationFrame(waitForGsap);
   requestAnimationFrame(waitForGsap);
 

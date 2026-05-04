@@ -110,22 +110,7 @@
   }
 }
 
-/* ── GSAP Preloader layout (planks + brand) ── */
-#planks-overlay {
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  display: block;
-  pointer-events: none;
-}
-.plank-l, .plank-r {
-  position: absolute;
-  width: 50.2%;
-  background: #050505;
-}
-.plank-l { left: 0; }
-.plank-r { right: 0; }
-
+/* ── GSAP Preloader layout (brand overlay) ── */
 #preloader-brand {
   position: absolute;
   inset: 0;
@@ -140,7 +125,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: clamp(0.8rem, 2vw, 1.4rem);
+  gap: clamp(2rem, 4vw, 3.5rem);
   position: relative;
   z-index: 1;
 }
@@ -150,7 +135,7 @@
   to   { opacity: 1; transform: scale(1); }
 }
 .pl-logo {
-  width: clamp(130px, 15vw, 200px);
+  width: clamp(160px, 20vw, 260px);
   height: auto;
   object-fit: contain;
   filter: drop-shadow(0 0 24px rgba(203,187,147,0.4))
@@ -158,35 +143,6 @@
   opacity: 0;
   transform-origin: center center;
   animation: pl-logo-in 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
-  z-index: 2;
-}
-/* Mask-overlay wipe: transform:scaleX is guaranteed compositor-accelerated on all browsers.
-   The cover div slides away from right→left (scaleX 1→0, origin right) to reveal the SVG. */
-@keyframes pl-sig-wipe {
-  from { transform: scaleX(1); }
-  to   { transform: scaleX(0); }
-}
-.pl-sig-wrap {
-  position: relative;
-  overflow: visible;
-  z-index: 1;
-}
-.pl-sig-wrap svg {
-  display: block;
-  width: clamp(120px, 16vw, 200px);
-  height: auto;
-  overflow: visible;
-}
-.pl-sig-cover {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: -20px;
-  background: #050505;
-  transform-origin: right center;
-  animation: pl-sig-wipe 1s cubic-bezier(0.4, 0, 0.2, 1) 0.5s both;
-  pointer-events: none;
 }
 @keyframes pl-dots-in {
   to { opacity: 1; }
@@ -235,7 +191,6 @@
   stroke-dashoffset: 1382;
   will-change: stroke-dashoffset;
 }
-html.wf-design-mode #planks-overlay,
 html.wf-design-mode #preloader-brand { display: none !important; }
 
 /* Safely hide elements with fallback and preserve transitions */
