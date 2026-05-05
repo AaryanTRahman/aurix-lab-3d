@@ -1,7 +1,6 @@
-<!-- GSAP, ScrollTrigger, Swiper, and Lenis -->
+<!-- GSAP, ScrollTrigger, and Lenis. Swiper is lazy-loaded only when the slider exists. -->
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-<script defer src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
 <script defer src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <script>
 
@@ -1183,7 +1182,18 @@ function initContactSection() {
 }
 });
 function initTinyflowSlider() {
-  if (initTinyflowSlider.initialized) {
+  if (initTinyflowSlider.initialized) return;
+  // Skip entirely if there is no slider on this page
+  if (!document.querySelector('.tinyflow-slider--main')) return;
+  // Lazy-load Swiper only when the slider is about to be initialised
+  if (typeof Swiper === 'undefined') {
+    if (initTinyflowSlider.loading) return;
+    initTinyflowSlider.loading = true;
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js';
+    script.defer = true;
+    script.onload = () => { initTinyflowSlider.loading = false; initTinyflowSlider(); };
+    document.head.appendChild(script);
     return;
   }
   initTinyflowSlider.initialized = true;
