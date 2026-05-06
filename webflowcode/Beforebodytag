@@ -113,23 +113,64 @@ document.addEventListener('DOMContentLoaded', function() {
   const preloaderWrapper = document.querySelector('.preloader-wrapper');
   const heroIconBtn      = document.querySelector('.hero-content-wrapper .icon-btn-wrapper');
   const navbar           = document.querySelector('.navbar-wrapper');
+  const heroScene        = document.querySelector('.hero-bg-3d-animation');
   const preloaderVideo   = preloaderWrapper ? preloaderWrapper.querySelector('video') : null;
 
   if (!preloaderWrapper) {
+    revealHeroScene();
     startSequentialSectionInit();
     setTimeout(enableScrolling, 300);
     return;
   }
 
   let hasCompleted     = false;
+  let hasStartedVideo  = false;
+  let videoFinished    = false;
   let overlayDone      = false;
   let sceneIsReady     = false;
   let timelineIsReady  = false;
   let scrollLockActive = false;
   let scrollLockRaf    = null;
+  let startVideoStage  = null;
+  let videoFallbackId  = null;
 
   if (heroIconBtn) { heroIconBtn.style.cssText += 'opacity:0;visibility:hidden;transition:opacity 0.8s ease-out,visibility 0.8s;'; }
   if (navbar)      { navbar.style.cssText      += 'opacity:0;visibility:hidden;transition:opacity 0.8s ease-out,visibility 0.8s;'; }
+  if (heroScene)   { heroScene.style.cssText   += 'opacity:0;visibility:hidden;'; }
+
+  function clearVideoFallback() {
+    if (!videoFallbackId) return;
+    clearTimeout(videoFallbackId);
+    videoFallbackId = null;
+  }
+
+  function revealHeroScene() {
+    if (!heroScene) return;
+    heroScene.style.visibility = 'visible';
+    if (typeof gsap !== 'undefined') {
+      gsap.killTweensOf(heroScene);
+      gsap.to(heroScene, {
+        opacity: 1,
+        duration: 0.9,
+        ease: 'power2.inOut',
+        overwrite: 'auto'
+      });
+    } else {
+      heroScene.style.opacity = '1';
+    }
+  }
+
+  function scheduleVideoFallback() {
+    if (!preloaderVideo) return;
+    clearVideoFallback();
+    const dur = preloaderVideo.duration;
+    if (!(dur && isFinite(dur) && dur > 0)) return;
+    videoFallbackId = setTimeout(() => {
+      if (!hasCompleted && hasStartedVideo && !videoFinished) {
+        completeTransition();
+      }
+    }, dur * 1000 + 1500);
+  }
 
   function preventScroll(e) { e.preventDefault(); }
   function preventKeys(e) {
@@ -171,6 +212,8 @@ document.addEventListener('DOMContentLoaded', function() {
   function completeTransition() {
     if (hasCompleted) return;
     hasCompleted = true;
+    clearVideoFallback();
+    revealHeroScene();
     startSequentialSectionInit();
     if (navbar)      { navbar.style.opacity = '1'; navbar.style.visibility = 'visible'; }
     if (heroIconBtn) { heroIconBtn.style.opacity = '1'; heroIconBtn.style.visibility = 'visible'; }
@@ -193,20 +236,39 @@ document.addEventListener('DOMContentLoaded', function() {
   function startVideoAndWait() {
     if (hasCompleted) return;
     if (!preloaderVideo) { completeTransition(); return; }
+    if (hasStartedVideo) return;
+    hasStartedVideo = true;
     if (preloaderVideo.__aurPaused !== undefined) preloaderVideo.__aurPaused = false;
     preloaderVideo.removeAttribute('loop');
     preloaderVideo.currentTime = 0;
     const onEnded = () => {
       preloaderVideo.removeEventListener('ended', onEnded);
+      preloaderVideo.removeEventListener('loadedmetadata', scheduleVideoFallback);
+      preloaderVideo.removeEventListener('durationchange', scheduleVideoFallback);
+      preloaderVideo.removeEventListener('error', onError);
+      clearVideoFallback();
+      videoFinished = true;
+      completeTransition();
+    };
+    const onError = () => {
+      preloaderVideo.removeEventListener('ended', onEnded);
+      preloaderVideo.removeEventListener('loadedmetadata', scheduleVideoFallback);
+      preloaderVideo.removeEventListener('durationchange', scheduleVideoFallback);
+      preloaderVideo.removeEventListener('error', onError);
+      clearVideoFallback();
       completeTransition();
     };
     preloaderVideo.addEventListener('ended', onEnded);
+    preloaderVideo.addEventListener('loadedmetadata', scheduleVideoFallback);
+    preloaderVideo.addEventListener('durationchange', scheduleVideoFallback);
+    preloaderVideo.addEventListener('error', onError, { once: true });
     preloaderVideo.muted = true;
     preloaderVideo.volume = 0;
-    preloaderVideo.play().catch(() => { /* autoplay blocked — timeout fallback handles completion */ });
-    const dur = preloaderVideo.duration;
-    setTimeout(() => { if (!hasCompleted) completeTransition(); },
-      (dur && isFinite(dur)) ? dur * 1000 + 2000 : 8000);
+    scheduleVideoFallback();
+    preloaderVideo.play().catch(() => {
+      clearVideoFallback();
+      completeTransition();
+    });
   }
 
   function runPreloader() {
@@ -254,6 +316,16 @@ document.addEventListener('DOMContentLoaded', function() {
       setTimeout(triggerOverlayExit, CFG.holdSeconds * 1000 + 300);
     }
 
+    startVideoStage = () => {
+      sceneIsReady = true;
+      timelineIsReady = true;
+      if (overlayDone) {
+        startVideoAndWait();
+      } else {
+        triggerOverlayExit();
+      }
+    };
+
     setTimeout(() => { timelineIsReady = true; attemptExit(); }, MIN_DISPLAY_MS);
 
     window.addEventListener('aurix:scene-ready', () => {
@@ -269,7 +341,12 @@ document.addEventListener('DOMContentLoaded', function() {
   requestAnimationFrame(waitForGsap);
 
   setTimeout(() => {
-    if (!hasCompleted) { sceneIsReady = true; timelineIsReady = true; completeTransition(); }
+    if (hasCompleted || hasStartedVideo) return;
+    if (typeof startVideoStage === 'function') {
+      startVideoStage();
+    } else {
+      startVideoAndWait();
+    }
   }, 10000);
 })();
 let hasStartedSequentialInit = false;

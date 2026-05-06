@@ -29,6 +29,12 @@ html.wf-design-mode .preloader-wrapper, html.wf-design-mode .star-bg-box {
   overflow: hidden;
 }
 
+html.w-mod-js .hero-bg-3d-animation {
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.9s ease-out, visibility 0.9s ease-out;
+}
+
 html.wf-design-mode .spline-slider-wrapper {
   position: relative;
 }
