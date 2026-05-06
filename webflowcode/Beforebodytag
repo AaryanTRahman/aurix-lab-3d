@@ -5,27 +5,16 @@
 <script>
 
 (function() {
-  function toS3(src) {
-    if (!src.includes('cdn.prod.website-files.com')) return src;
-    return src
-      .replace('https://cdn.prod.website-files.com/', 'https://s3.amazonaws.com/webflow-prod-assets/')
-      .replace('%2F', '/')
-      .replace(/_webm\.webm$/i, '.webm')
-      .replace(/_mp4\.mp4$/i, '.mp4');
-  }
   document.querySelectorAll('video').forEach(function(v) {
     if (v.closest('.preloader-wrapper')) return;
     var srcs = Array.from(v.querySelectorAll('source'));
     var hasWebm = srcs.some(function(s) { return (s.getAttribute('src') || '').endsWith('.webm'); });
     if (!hasWebm) return;
-    var changed = false;
+    var removed = false;
     srcs.forEach(function(s) {
-      var src = s.getAttribute('src') || '';
-      if (src.endsWith('.mp4')) { s.remove(); changed = true; return; }
-      var s3src = toS3(src);
-      if (s3src !== src) { s.setAttribute('src', s3src); changed = true; }
+      if ((s.getAttribute('src') || '').endsWith('.mp4')) { s.remove(); removed = true; }
     });
-    if (changed && v.networkState !== 0) v.load();
+    if (removed && v.networkState !== 0) v.load();
   });
 })();
 
