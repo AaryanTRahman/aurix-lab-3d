@@ -5,6 +5,20 @@
 <script>
 
 (function() {
+  document.querySelectorAll('video').forEach(function(v) {
+    if (v.closest('.preloader-wrapper')) return;
+    var srcs = Array.from(v.querySelectorAll('source'));
+    var hasWebm = srcs.some(function(s) { return (s.getAttribute('src') || '').endsWith('.webm'); });
+    if (!hasWebm) return;
+    var removed = false;
+    srcs.forEach(function(s) {
+      if ((s.getAttribute('src') || '').endsWith('.mp4')) { s.remove(); removed = true; }
+    });
+    if (removed) v.load();
+  });
+})();
+
+(function() {
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'auto';
   }
