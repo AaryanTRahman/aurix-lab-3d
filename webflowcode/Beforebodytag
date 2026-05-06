@@ -25,7 +25,7 @@
       var s3src = toS3(src);
       if (s3src !== src) { s.setAttribute('src', s3src); changed = true; }
     });
-    if (changed) v.load();
+    if (changed && v.networkState !== 0) v.load();
   });
 })();
 
