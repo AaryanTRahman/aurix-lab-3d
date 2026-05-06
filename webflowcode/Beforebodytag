@@ -33,25 +33,32 @@ const isTouchDevice = ('ontouchstart' in window) || navigator.maxTouchPoints > 0
 const isMobileDevice = window.innerWidth <= 767 || isTouchDevice;
 
 let lenis = null;
+let lastHeroViewportWidth = Math.round(window.visualViewport?.width || window.innerWidth || 0);
 
-function syncHeroViewportHeight() {
+function syncHeroViewportHeight(force = false) {
   if (!isMobileDevice) {
     document.documentElement.style.removeProperty('--aurix-hero-vh');
+    return;
+  }
+  const currentViewportWidth = Math.round(window.visualViewport?.width || window.innerWidth || 0);
+  const widthChanged = Math.abs(currentViewportWidth - lastHeroViewportWidth) > 2;
+  const currentY = window.scrollY || window.pageYOffset || 0;
+  if (!force && !widthChanged && currentY > 8) {
     return;
   }
   const viewportHeight = Math.round(window.visualViewport?.height || window.innerHeight || 0);
   if (viewportHeight > 0) {
     document.documentElement.style.setProperty('--aurix-hero-vh', `${viewportHeight}px`);
   }
+  lastHeroViewportWidth = currentViewportWidth;
 }
 
-syncHeroViewportHeight();
+syncHeroViewportHeight(true);
 
 document.addEventListener('DOMContentLoaded', function() {
-  syncHeroViewportHeight();
+  syncHeroViewportHeight(true);
   if (window.visualViewport) {
     window.visualViewport.addEventListener('resize', syncHeroViewportHeight);
-    window.visualViewport.addEventListener('scroll', syncHeroViewportHeight);
   }
   window.addEventListener('resize', syncHeroViewportHeight);
 
