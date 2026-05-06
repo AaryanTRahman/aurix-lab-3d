@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', function() {
       clearTimeout(window.lenisResizeTimer);
       window.lenisResizeTimer = setTimeout(() => {
         lenis.resize();
-      }, 500);
+      }, 200);
     });
   }
   gsap.registerPlugin(ScrollTrigger);
@@ -205,7 +205,15 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   function keepAtTop() {
     if (!scrollLockActive) return;
-    if (window.scrollY !== 0) window.scrollTo(0, 0);
+    if (window.scrollY !== 0) {
+      window.scrollTo(0, 0);
+      scrollLockRaf = requestAnimationFrame(keepAtTop);
+    } else {
+      scrollLockRaf = null;
+    }
+  }
+  function _onScrollDuringLock() {
+    if (!scrollLockActive || scrollLockRaf) return;
     scrollLockRaf = requestAnimationFrame(keepAtTop);
   }
   function lockScrolling() {
@@ -219,11 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
     window.addEventListener('wheel',     preventScroll, { passive:false, capture:true });
     window.addEventListener('touchmove', preventScroll, { passive:false, capture:true });
     window.addEventListener('keydown',   preventKeys,   true);
+    window.addEventListener('scroll', _onScrollDuringLock, { passive: true });
     keepAtTop();
   }
   function enableScrolling() {
     scrollLockActive = false;
     cancelAnimationFrame(scrollLockRaf);
+    scrollLockRaf = null;
     const s = { overflow:'', overscrollBehavior:'', touchAction:'',
                 position:'', top:'', left:'', right:'', width:'', height:'' };
     Object.assign(document.documentElement.style, s);
@@ -231,6 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
     window.removeEventListener('wheel',     preventScroll, { passive:false, capture:true });
     window.removeEventListener('touchmove', preventScroll, { passive:false, capture:true });
     window.removeEventListener('keydown',   preventKeys,   true);
+    window.removeEventListener('scroll', _onScrollDuringLock, { passive: true });
     window.scrollTo(0, 0);
     if (lenis) { lenis.start(); lenis.resize(); }
     safeScrollTriggerRefresh(true);
@@ -325,10 +336,10 @@ document.addEventListener('DOMContentLoaded', function() {
         progressTrack
       ].filter(Boolean);
       // CSS animation fill-mode overrides GSAP inline opacity — cancel it first so GSAP can tween cleanly
-      brandEls.forEach(el => {
-        const op = window.getComputedStyle(el).opacity;
+      const opacities = brandEls.map(el => window.getComputedStyle(el).opacity);
+      brandEls.forEach((el, i) => {
         el.style.animation = 'none';
-        el.style.opacity = op;
+        el.style.opacity = opacities[i];
       });
       if (brandEls.length) {
         gsap.to(brandEls, { opacity: 0, duration: 0.55, ease: 'power2.inOut', onComplete: startVideoAndWait });
@@ -481,6 +492,9 @@ function initParticleSection() {
     shadowBlur: reduceParticleMotion ? 0 : (particleIsMobile ? 0 : particleIsTablet ? 8 : 12)
   };
   const particleSlides = Array.from(section.querySelectorAll('.spline-slider-wrapper .slide-item'));
+  const particleSlideVideos = particleSlides.map(slide =>
+    Array.from(slide.querySelectorAll('video'))
+  );
 
   function initializeStarBackground() {
     const canvas = document.getElementById('starsCanvas');
@@ -493,6 +507,7 @@ function initParticleSection() {
         this.color = options.color || '#FFF';
         this.count = options.count || 72;
         this.shadowBlur = options.shadowBlur ?? 12;
+        this.rgb = this.hexToRgb(this.color);
         this.stars = [];
         this.perspective = 0;
         this.animationFrame = null;
@@ -551,7 +566,7 @@ function initParticleSection() {
         const prevScale = this.perspective / (this.perspective + star.z + star.speed * 15);
         const xPrev = this.canvas.width / 2 + star.x * prevScale;
         const yPrev = this.canvas.height / 2 + star.y * prevScale;
-        const rgb = this.hexToRgb(this.color);
+        const rgb = this.rgb;
         if (this.shadowBlur > 0) {
           this.ctx.save();
           this.ctx.strokeStyle = `rgba(${rgb.r},${rgb.g},${rgb.b},0.18)`;
@@ -606,7 +621,7 @@ function initParticleSection() {
           this.animationFrame = null;
         }
       }
-      setColor(color) { this.color = color; }
+      setColor(color) { this.color = color; this.rgb = this.hexToRgb(this.color); }
     }
     fallingStarsInstance = new FallingStars(canvas, {
       color: '#FFF',
@@ -727,7 +742,7 @@ function initParticleSection() {
       const sliderIsVisible = slider.style.visibility !== 'hidden' && slider.style.display !== 'none';
       const shouldPlay = particleSectionActive && sliderIsVisible && isVisibleInLayout && (index === currentSlideIndex);
 
-      slide.querySelectorAll('video').forEach((video) => {
+      particleSlideVideos[index].forEach((video) => {
         video.muted = true;
         video.defaultMuted = true;
         video.playsInline = true;
@@ -881,6 +896,16 @@ function initParticleSection() {
     }
   }
 
+  let _wordOffsets = { x: 0, y: 0 };
+  function _calcWordOffsets() {
+    gsap.set(lastWord, { clearProps: 'x,y,scale' });
+    const wordRect    = lastWord.getBoundingClientRect();
+    const sectionRect = section.getBoundingClientRect();
+    _wordOffsets.x = (sectionRect.width / 2)  - ((wordRect.left - sectionRect.left) + wordRect.width  / 2);
+    _wordOffsets.y = (sectionRect.height / 2) - ((wordRect.top  - sectionRect.top)  + wordRect.height / 2);
+  }
+  _calcWordOffsets();
+
   const mainTl = gsap.timeline({
     scrollTrigger: {
       trigger: section,
@@ -888,6 +913,7 @@ function initParticleSection() {
       end: '+=500%',
       pin: true,
       scrub: true,
+      onRefresh: _calcWordOffsets,
       onEnter: () => {
         particleSectionActive = true;
         updateParticlePlaybackFromVisibility();
@@ -914,23 +940,8 @@ function initParticleSection() {
       onReverseComplete: () => { if (fallingStarsInstance) fallingStarsInstance.stop(); }
     }, 0)
     .to(lastWord, {
-      x: () => {
-        gsap.set(lastWord, { clearProps: 'x,y,scale' });
-        const wordRect = lastWord.getBoundingClientRect();
-        const sectionRect = section.getBoundingClientRect();
-        
-        const wordCenterX = (wordRect.left - sectionRect.left) + (wordRect.width / 2);
-        const sectionCenterX = sectionRect.width / 2;
-        return sectionCenterX - wordCenterX;
-      },
-      y: () => {
-        const wordRect = lastWord.getBoundingClientRect();
-        const sectionRect = section.getBoundingClientRect();
-        
-        const wordCenterY = (wordRect.top - sectionRect.top) + (wordRect.height / 2);
-        const sectionCenterY = sectionRect.height / 2;
-        return sectionCenterY - wordCenterY;
-      },
+      x: () => _wordOffsets.x,
+      y: () => _wordOffsets.y,
       scale: initialScale, duration: 0.12, ease: 'power2.inOut'
     }, 0)
     .to(lastWord, { scale: finalScale, opacity: 0, duration: 0.15, ease: 'power3.inOut' }, 0.12)
