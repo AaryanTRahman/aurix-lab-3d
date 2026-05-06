@@ -1301,6 +1301,12 @@ function initTinyflowSlider() {
     return;
   }
   initTinyflowSlider.initialized = true;
+  document.querySelectorAll('.tinyflow-slider--main video').forEach(function(v) {
+    v.autoplay = false;
+    v.removeAttribute('autoplay');
+    v.preload = 'none';
+    v.pause();
+  });
   function getTranslateMultiplier() {
     const width = window.innerWidth;
     if (width <= 360) return 50;
