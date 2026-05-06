@@ -1,20 +1,430 @@
-<!-- Brand overlay: logo + dots + progress ring (sits on top of preloader video) -->
-<div id="preloader-brand">
-  <div class="pl-brand" id="pl-brand-inner">
-    <div id="pl-brand-shadow"></div>
+<!-- AurixLab preloader embed: loading_animation.html adapted for the Webflow preloader -->
+<style>
+.preloader-wrapper {
+  background: #000;
+}
 
-    <img src="https://cdn.prod.website-files.com/69dbcca242222c02b829a57b/69f898bae44b7640b88b3afb_White-Gold-icon.png" class="pl-logo" id="pl-logo" alt="Aurix"
-         width="260" height="260" fetchpriority="high" decoding="async" />
+.preloader-wrapper video,
+.preloader-wrapper .w-background-video video {
+  opacity: 0.5 !important;
+  filter: brightness(0.58) saturate(0.9);
+  transform: scale(1.01);
+}
 
-    <div class="pl-loader" id="pl-loader">
-      <div class="pl-dot"></div>
-      <div class="pl-dot"></div>
-      <div class="pl-dot"></div>
+#preloader-brand {
+  background: rgba(0, 0, 0, 0.44);
+}
+</style>
+
+<div id="preloader-brand" class="aurix-loader-embed" aria-label="AurixLab loading">
+  <div class="aurix-loader-card">
+    <div class="aurix-loader-card-inner"></div>
+    <div id="pl-brand-shadow" class="aurix-loader-shadow"></div>
+
+    <div class="aurix-loader-logo-wrap" id="pl-logo" aria-hidden="true">
+      <svg class="aurix-loader-logo" viewBox="0 0 992 187" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M248.2 113.2C245.5 141 223.7 155 193 153.6C165.5 152.3 147.6 134.7 145.3 106.6C145 103.2 145 99.8 145 96.3C145 75.5 145 52.8 145 30.6H172.3C172.3 49.9 172.3 70.5 172.3 89.3C172.3 95 172 100.8 172.7 106.4C174.5 121 185.2 130.6 198.6 130.1C212.1 129.7 221.9 119.8 222.4 104.5C223 85.1 222.6 65.7 222.6 46.4C222.6 42.1 222.6 36 222.6 30.6H248.8C248.9 57.5 250.9 86.5 248.2 113.2Z" fill="currentColor" stroke="currentColor" stroke-width="8.8775" stroke-miterlimit="10"/>
+        <path d="M132.1 153.6H102.3L69 62.2L33.8 153.6H7L55.6 31.1H83.7L132.1 153.6Z" fill="currentColor" stroke="currentColor" stroke-width="8.8775" stroke-miterlimit="10"/>
+        <path d="M450.8 30.8H423.9V152.7H450.8V30.8Z" fill="currentColor" stroke="currentColor" stroke-width="8.8775" stroke-miterlimit="10"/>
+        <path d="M608.8 30H577.8L493.8 153.4H524.9L608.8 30Z" fill="#cbbb93" stroke="#cbbb93" stroke-width="8.8774" stroke-miterlimit="10"/>
+        <path d="M615.6 173.7L572.9 147.8L563.6 133.1L578.9 111.9L615.6 173.7Z" fill="currentColor" stroke="currentColor" stroke-width="8.8775" stroke-miterlimit="10"/>
+        <path d="M483.8 8L525.7 21.7L537.9 50.8L523 71.2L483.8 8Z" fill="currentColor" stroke="currentColor" stroke-width="8.8775" stroke-miterlimit="10"/>
+        <path d="M287.1 49.8L336.6 49.9C339.3 50.3 345.7 51.7 351.6 57.1C359.5 64.4 360.5 73.8 360.7 76.1C360.9 79 361.7 88.9001 354.4 96.4001C349.4 101.4 343.4 102.6 341 103L287.2 103.2L286.9 148.9H300.9L301.2 116L332.7 116.1L355.7 148.9L373.4 148.5L350.3 115.5C353.4 114.4 364.9 110.1 371.6 98C376.9 88.5 376.3 79.4 375.9 75.2C375.5 70.8 374.3 57.5 363.1 47.4C353.1 38.3 341.4 37.4 337.8 37.3L287.2 36.9L287.1 49.8Z" fill="currentColor" stroke="currentColor" stroke-width="19.1207" stroke-miterlimit="10"/>
+        <path d="M648.6 147.1V26.7H634.7V158H726.3L730.8 147L648.6 147.1Z" fill="currentColor"/>
+        <path d="M813.8 26.7H799.6L745.3 158H759.2L771.8 127.4L776.1 116.6L806.9 41.8L837 114.9L837.1 115.2L842.2 127.5L843.4 130.5L843.7 131.1L854.8 158.1H868.5L813.8 26.7Z" fill="currentColor"/>
+        <path d="M984.4 102.6C979.5 97 972.6 93.1 963.6 90.8C970.6 88.3 975.9 84.4 979.5 79.2C983.2 74 985 67.7 985 60.4C985 49.5 981.6 41 974.8 35C968 29 958.4 26 945.9 26H888V37.1H902.3V37.2H942.7C951.7 37.2 958.6 39.3 963.6 43.6C968.5 47.9 971 53.9 971 61.7C971 69.4 968.5 75.4 963.5 79.7C958.5 84 951.7 86.2 942.9 86.2H902.3H888V96.5H901.9H943.8C954.5 96.5 962.8 98.7 968.8 103.2C974.8 107.7 977.8 113.9 977.8 121.8C977.8 129.6 974.5 135.6 968 139.9C961.5 144.2 952.1 146.3 939.8 146.3H901.8H887.9V157.5H939.2C956.2 157.5 969.2 154.6 978.2 148.7C987.1 142.8 991.6 134.3 991.6 123C991.7 114.9 989.2 108.2 984.4 102.6Z" fill="currentColor"/>
+        <path d="M899 26.5H888V157H899V26.5Z" fill="currentColor"/>
+      </svg>
+    </div>
+
+    <div class="aurix-loader-hex">
+      <svg id="pl-ring" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <polygon points="48,4 84,24 84,72 48,92 12,72 12,24" stroke="#6b5c3a" stroke-width="1" fill="none" opacity="0.5"/>
+        <circle id="pl-ring-fill" cx="48" cy="48" r="40" stroke="url(#aurix-loader-arc)" stroke-width="2" stroke-dasharray="80 172" stroke-linecap="round" fill="none"/>
+        <circle cx="48" cy="48" r="28" stroke="#9a876a" stroke-width="1" stroke-dasharray="6 8" fill="none" opacity="0.6"/>
+        <defs>
+          <linearGradient id="aurix-loader-arc" x1="0" y1="0" x2="96" y2="96" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#e3d8bc"/>
+            <stop offset="100%" stop-color="#cbbb93" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="aurix-loader-center-dot"></div>
+    </div>
+
+    <div class="aurix-loader-status" id="pl-loader" aria-hidden="true">
+      <div class="aurix-loader-dots">
+        <span></span><span></span><span></span><span></span><span></span>
+      </div>
+
+      <div class="aurix-loader-bar">
+        <div class="aurix-loader-bar-fill"></div>
+      </div>
+
+      <div class="aurix-loader-label">
+        <span>Initializing</span>
+        <small>AurixLab</small>
+      </div>
     </div>
   </div>
-
-  <svg class="pl-ring" id="pl-ring" viewBox="0 0 480 480" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle class="pl-ring-track" cx="240" cy="240" r="220"/>
-    <circle class="pl-ring-fill" id="pl-ring-fill" cx="240" cy="240" r="220"/>
-  </svg>
 </div>
+
+<style>
+:root {
+  --aurix-loader-bg: #000000;
+  --aurix-loader-dim: #2a2518;
+  --aurix-loader-mid: #6b5c3a;
+  --aurix-loader-low: #9a876a;
+  --aurix-loader-main: #cbbb93;
+  --aurix-loader-hi: #e3d8bc;
+}
+
+.preloader-wrapper {
+  background: #000;
+}
+
+.preloader-wrapper video,
+.preloader-wrapper .w-background-video video {
+  opacity: 0.5 !important;
+  filter: brightness(0.58) saturate(0.9);
+  transform: scale(1.01);
+  transition: opacity 0.8s ease, filter 0.8s ease, transform 0.8s ease;
+}
+
+.preloader-wrapper.aurix-loader-is-waiting video,
+.preloader-wrapper.aurix-loader-is-waiting .w-background-video video {
+  opacity: 0.5 !important;
+  filter: brightness(0.58) saturate(0.9);
+  transform: scale(1.01);
+}
+
+.preloader-wrapper.aurix-loader-video-ready video,
+.preloader-wrapper.aurix-loader-video-ready .w-background-video video {
+  opacity: 1 !important;
+  filter: none;
+  transform: scale(1);
+}
+
+.aurix-loader-embed,
+.aurix-loader-embed * {
+  box-sizing: border-box;
+}
+
+.aurix-loader-embed {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.44);
+  font-family: "DM Sans", "Geist", Arial, sans-serif;
+  color: var(--aurix-loader-hi);
+  transition: background 0.55s ease;
+}
+
+.aurix-loader-embed::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--aurix-loader-dim) 1px, transparent 1px),
+    linear-gradient(90deg, var(--aurix-loader-dim) 1px, transparent 1px);
+  background-size: 48px 48px;
+  opacity: 0.35;
+  pointer-events: none;
+  transition: opacity 0.55s ease;
+}
+
+.aurix-loader-embed::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 60% 50% at 50% 50%, rgba(107, 92, 58, 0.5) 0%, transparent 70%);
+  animation: aurix-loader-pulse-glow 3s ease-in-out infinite;
+  pointer-events: none;
+  transition: opacity 0.55s ease;
+}
+
+.preloader-wrapper.aurix-loader-video-ready #preloader-brand {
+  background: transparent !important;
+}
+
+.preloader-wrapper.aurix-loader-video-ready #preloader-brand::before,
+.preloader-wrapper.aurix-loader-video-ready #preloader-brand::after {
+  opacity: 0 !important;
+  animation: none !important;
+  background: transparent !important;
+}
+
+.preloader-wrapper.aurix-loader-video-ready .aurix-loader-card {
+  opacity: 0;
+  visibility: hidden;
+  transform: scale(0.96);
+}
+
+.aurix-loader-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(88vw, 560px);
+  gap: clamp(22px, 4vw, 36px);
+  padding: clamp(34px, 7vw, 70px) clamp(28px, 8vw, 84px);
+  background:
+    linear-gradient(135deg, rgba(255, 248, 224, 0.075) 0%, rgba(255, 248, 224, 0.018) 32%, rgba(255, 248, 224, 0) 58%),
+    radial-gradient(ellipse at 50% 22%, rgba(203, 187, 147, 0.095), transparent 62%),
+    linear-gradient(145deg, rgba(18, 16, 10, 0.24), rgba(0, 0, 0, 0.16));
+  border: 1px solid rgba(203, 187, 147, 0.64);
+  border-radius: 4px;
+  -webkit-backdrop-filter: blur(34px) saturate(1.32) contrast(0.96);
+  backdrop-filter: blur(34px) saturate(1.32) contrast(0.96);
+  transition: opacity 0.55s ease, visibility 0.55s ease, transform 0.55s ease;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 248, 224, 0.22),
+    inset 0 -1px 0 rgba(203, 187, 147, 0.12),
+    inset 0 0 34px rgba(203, 187, 147, 0.04),
+    0 0 0 1px rgba(255, 248, 224, 0.035),
+    0 24px 90px rgba(0, 0, 0, 0.32),
+    0 0 72px rgba(203, 187, 147, 0.075);
+}
+
+@supports not ((backdrop-filter: blur(34px)) or (-webkit-backdrop-filter: blur(34px))) {
+  .aurix-loader-card {
+    background:
+      linear-gradient(135deg, rgba(255, 248, 224, 0.07) 0%, rgba(255, 248, 224, 0.02) 42%, rgba(255, 248, 224, 0) 60%),
+      radial-gradient(ellipse at 50% 22%, rgba(203, 187, 147, 0.11), transparent 62%),
+      linear-gradient(145deg, rgba(18, 16, 10, 0.52), rgba(0, 0, 0, 0.46));
+  }
+}
+
+.aurix-loader-card-inner {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.aurix-loader-card-inner::before,
+.aurix-loader-card-inner::after {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-color: rgba(203, 187, 147, 0.72);
+  border-style: solid;
+}
+
+.aurix-loader-card-inner::before {
+  top: 10px;
+  right: 10px;
+  border-width: 1px 1px 0 0;
+}
+
+.aurix-loader-card-inner::after {
+  bottom: 10px;
+  left: 10px;
+  border-width: 0 0 1px 1px;
+}
+
+.aurix-loader-shadow {
+  position: absolute;
+  inset: 12% 8%;
+  z-index: -1;
+  background: radial-gradient(ellipse at center, rgba(203, 187, 147, 0.08) 0%, transparent 68%);
+  filter: blur(34px);
+  pointer-events: none;
+}
+
+.aurix-loader-logo-wrap {
+  width: min(72vw, 340px);
+  color: var(--aurix-loader-hi);
+  filter: drop-shadow(0 0 18px rgba(203, 187, 147, 0.28));
+}
+
+.aurix-loader-logo {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.aurix-loader-hex {
+  position: relative;
+  width: clamp(96px, 18vw, 128px);
+  height: clamp(96px, 18vw, 128px);
+}
+
+.aurix-loader-hex svg {
+  width: 100%;
+  height: 100%;
+  animation: aurix-loader-spin 2.4s linear infinite;
+}
+
+.aurix-loader-center-dot {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.aurix-loader-center-dot::before {
+  content: "";
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--aurix-loader-main);
+  box-shadow: 0 0 12px var(--aurix-loader-main), 0 0 24px var(--aurix-loader-mid);
+  animation: aurix-loader-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.aurix-loader-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: clamp(20px, 3vw, 28px);
+}
+
+.aurix-loader-dots {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.aurix-loader-dots span {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--aurix-loader-main);
+  animation: aurix-loader-dot-wave 1.4s ease-in-out infinite;
+}
+
+.aurix-loader-dots span:nth-child(1) { animation-delay: 0s; background: var(--aurix-loader-hi); }
+.aurix-loader-dots span:nth-child(2) { animation-delay: 0.15s; background: var(--aurix-loader-main); }
+.aurix-loader-dots span:nth-child(3) { animation-delay: 0.30s; background: var(--aurix-loader-low); }
+.aurix-loader-dots span:nth-child(4) { animation-delay: 0.45s; background: var(--aurix-loader-main); }
+.aurix-loader-dots span:nth-child(5) { animation-delay: 0.60s; background: var(--aurix-loader-hi); }
+
+.aurix-loader-bar {
+  width: min(70vw, 280px);
+  height: 2px;
+  background: rgba(203, 187, 147, 0.12);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.aurix-loader-bar-fill {
+  height: 100%;
+  width: 40%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--aurix-loader-mid), var(--aurix-loader-main));
+  box-shadow: 0 0 8px var(--aurix-loader-main);
+  animation: aurix-loader-scan 2s ease-in-out infinite;
+}
+
+.aurix-loader-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.aurix-loader-label span {
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--aurix-loader-main);
+  opacity: 0.85;
+  animation: aurix-loader-blink-text 3s ease-in-out infinite;
+}
+
+.aurix-loader-label small {
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--aurix-loader-low);
+  opacity: 0.5;
+}
+
+html.wf-design-mode #preloader-brand {
+  display: none !important;
+}
+
+@keyframes aurix-loader-pulse-glow {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.08); }
+}
+
+@keyframes aurix-loader-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes aurix-loader-dot-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.6); opacity: 0.6; }
+}
+
+@keyframes aurix-loader-dot-wave {
+  0%, 80%, 100% { transform: translateY(0); opacity: 0.35; }
+  40% { transform: translateY(-8px); opacity: 1; }
+}
+
+@keyframes aurix-loader-scan {
+  0% { transform: translateX(-160%); }
+  100% { transform: translateX(370%); }
+}
+
+@keyframes aurix-loader-blink-text {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 0.45; }
+}
+
+@media (max-width: 480px) {
+  .aurix-loader-card {
+    width: min(90vw, 360px);
+    gap: 24px;
+  }
+
+  .aurix-loader-logo-wrap {
+    width: min(68vw, 250px);
+  }
+}
+</style>
+
+<script>
+(function () {
+  function initAurixLoaderVideoFade() {
+    var wrapper = document.querySelector(".preloader-wrapper");
+    if (!wrapper) return;
+
+    var video = wrapper.querySelector("video");
+    wrapper.classList.add("aurix-loader-is-waiting");
+
+    function restoreVideo() {
+      wrapper.classList.remove("aurix-loader-is-waiting");
+      wrapper.classList.add("aurix-loader-video-ready");
+    }
+
+    if (video) {
+      video.addEventListener("play", function () {
+        if (video.__aurPaused) return;
+        restoreVideo();
+      }, true);
+    }
+
+    window.addEventListener("aurix:scene-ready", function () {
+      window.setTimeout(restoreVideo, 1050);
+    }, { once: true });
+
+    window.setTimeout(restoreVideo, 10000);
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initAurixLoaderVideoFade);
+  } else {
+    initAurixLoaderVideoFade();
+  }
+})();
+</script>
