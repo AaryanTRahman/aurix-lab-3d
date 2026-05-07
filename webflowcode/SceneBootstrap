@@ -18,13 +18,7 @@
   }
 
   function scheduleScene() {
-    window.setTimeout(function() {
-      if ('requestIdleCallback' in window) {
-        requestIdleCallback(startScene, { timeout: 1200 });
-      } else {
-        startScene();
-      }
-    }, START_DELAY_MS);
+    window.setTimeout(startScene, START_DELAY_MS);
   }
 
   if (document.readyState === 'complete') {
