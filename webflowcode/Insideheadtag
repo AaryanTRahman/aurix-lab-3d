@@ -1,6 +1,3 @@
-<link rel="preload" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"></noscript>
-
 <style>
 .tinyflow-slider--main .swiper-wrapper,
 .tinyflow-slider--main .swiper-slide {

@@ -415,6 +415,23 @@ let hasStartedSequentialInit = false;
     }
   }
 
+  function scheduleNearSectionInit(selector, initFn, rootMargin, fallbackDelay) {
+    const target = document.querySelector(selector);
+    if (!target) return;
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          observer.disconnect();
+          scheduleSectionInit(initFn, 0);
+        });
+      }, { rootMargin: rootMargin || '900px 0px', threshold: 0.01 });
+      observer.observe(target);
+      return;
+    }
+    scheduleSectionInit(initFn, fallbackDelay || 3000);
+  }
+
     
     
   
@@ -426,7 +443,7 @@ function startSequentialSectionInit() {
   scheduleSectionInit(initWorkMeetSection, 420);
   scheduleSectionInit(initCounterSection, 680);
   scheduleSectionInit(initContactSection, 940);
-  scheduleSectionInit(initTinyflowSlider, 1200);
+  scheduleNearSectionInit('.tinyflow-slider--main', initTinyflowSlider, '900px 0px', 2500);
   
   Promise.all([
     document.fonts ? document.fonts.ready : Promise.resolve(),
@@ -1319,10 +1336,19 @@ function initTinyflowSlider() {
   if (initTinyflowSlider.initialized) return;
   // Skip entirely if there is no slider on this page
   if (!document.querySelector('.tinyflow-slider--main')) return;
+  function ensureSwiperCss() {
+    if (document.querySelector('link[data-aurix-swiper-css]')) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css';
+    link.dataset.aurixSwiperCss = '1';
+    document.head.appendChild(link);
+  }
   // Lazy-load Swiper only when the slider is about to be initialised
   if (typeof Swiper === 'undefined') {
     if (initTinyflowSlider.loading) return;
     initTinyflowSlider.loading = true;
+    ensureSwiperCss();
     const script = document.createElement('script');
     script.src = 'https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js';
     script.defer = true;
@@ -1330,6 +1356,7 @@ function initTinyflowSlider() {
     document.head.appendChild(script);
     return;
   }
+  ensureSwiperCss();
   initTinyflowSlider.initialized = true;
   document.querySelectorAll('.tinyflow-slider--main video').forEach(function(v) {
     v.autoplay = false;
