@@ -5,6 +5,7 @@
 (function() {
   const HERO_VIDEO_SELECTOR = '.preloader-wrapper video, .hero-section video, .hero-bg-3d-animation video';
   const LAZY_ATTR = 'data-aurix-src';
+  const POSTER_ATTR = 'data-aurix-poster';
   const lazyVideos = new WeakSet();
 
   function isHeroVideo(video) {
@@ -33,6 +34,12 @@
       video.removeAttribute('src');
       stripped = true;
     }
+    const poster = video.getAttribute('poster');
+    if (poster) {
+      video.setAttribute(POSTER_ATTR, poster);
+      video.removeAttribute('poster');
+      stripped = true;
+    }
     video.querySelectorAll('source[src]').forEach(function(source) {
       stripped = stripSource(source) || stripped;
     });
@@ -53,6 +60,11 @@
     const directSrc = video.getAttribute(LAZY_ATTR);
     if (directSrc && !video.getAttribute('src')) {
       video.setAttribute('src', directSrc);
+      restored = true;
+    }
+    const poster = video.getAttribute(POSTER_ATTR);
+    if (poster && !video.getAttribute('poster')) {
+      video.setAttribute('poster', poster);
       restored = true;
     }
     video.querySelectorAll('source[' + LAZY_ATTR + ']').forEach(function(source) {
