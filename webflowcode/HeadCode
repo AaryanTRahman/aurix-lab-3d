@@ -4,12 +4,20 @@
 <script>
 (function() {
   const HERO_VIDEO_SELECTOR = '.preloader-wrapper video, .hero-section video, .hero-bg-3d-animation video';
+  const HERO_MEDIA_SELECTOR = '.preloader-wrapper, .hero-section, .hero-bg-3d-animation';
   const LAZY_ATTR = 'data-aurix-src';
   const POSTER_ATTR = 'data-aurix-poster';
+  const IMG_ATTR = 'data-aurix-img-src';
+  const SRCSET_ATTR = 'data-aurix-img-srcset';
+  const SIZES_ATTR = 'data-aurix-img-sizes';
   const lazyVideos = new WeakSet();
 
   function isHeroVideo(video) {
     return !!(video && video.closest(HERO_VIDEO_SELECTOR));
+  }
+
+  function isHeroMedia(element) {
+    return !!(element && element.closest(HERO_MEDIA_SELECTOR));
   }
 
   function stripSource(source) {
@@ -79,10 +87,65 @@
     return restored;
   }
 
+  function shouldStripImage(img) {
+    if (!img || isHeroMedia(img)) return false;
+    const src = img.getAttribute('src') || '';
+    return src.indexOf('_poster.') !== -1 || !!img.closest('.w-background-video');
+  }
+
+  function stripImage(img) {
+    if (!shouldStripImage(img) || img.dataset.aurixLazyImage === '1') return false;
+    let stripped = false;
+    const src = img.getAttribute('src');
+    const srcset = img.getAttribute('srcset');
+    const sizes = img.getAttribute('sizes');
+    if (src) {
+      img.setAttribute(IMG_ATTR, src);
+      img.removeAttribute('src');
+      stripped = true;
+    }
+    if (srcset) {
+      img.setAttribute(SRCSET_ATTR, srcset);
+      img.removeAttribute('srcset');
+      stripped = true;
+    }
+    if (sizes) {
+      img.setAttribute(SIZES_ATTR, sizes);
+      img.removeAttribute('sizes');
+    }
+    if (stripped) {
+      img.loading = 'lazy';
+      img.dataset.aurixLazyImage = '1';
+    }
+    return stripped;
+  }
+
+  function loadImage(img) {
+    if (!img) return false;
+    let restored = false;
+    const src = img.getAttribute(IMG_ATTR);
+    const srcset = img.getAttribute(SRCSET_ATTR);
+    const sizes = img.getAttribute(SIZES_ATTR);
+    if (sizes && !img.getAttribute('sizes')) {
+      img.setAttribute('sizes', sizes);
+    }
+    if (srcset && !img.getAttribute('srcset')) {
+      img.setAttribute('srcset', srcset);
+      restored = true;
+    }
+    if (src && !img.getAttribute('src')) {
+      img.setAttribute('src', src);
+      restored = true;
+    }
+    return restored;
+  }
+
   function scan(root) {
     if (!root || root.nodeType !== 1) return;
     if (root.matches && root.matches('video')) stripVideo(root);
+    if (root.matches && root.matches('img')) stripImage(root);
     root.querySelectorAll?.('video').forEach(stripVideo);
+    root.querySelectorAll?.('img').forEach(stripImage);
   }
 
   const observer = new MutationObserver(function(mutations) {
@@ -98,7 +161,9 @@
     loadWithin: function(root) {
       if (!root) return;
       if (root.matches && root.matches('video')) loadVideo(root);
+      if (root.matches && root.matches('img')) loadImage(root);
       root.querySelectorAll?.('video').forEach(loadVideo);
+      root.querySelectorAll?.('img').forEach(loadImage);
     }
   };
 
