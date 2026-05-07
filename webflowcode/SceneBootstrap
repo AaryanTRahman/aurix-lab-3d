@@ -11,10 +11,14 @@
   function startScene() {
     if (started) return;
     started = true;
-    import(SCENE_URL).catch(function(error) {
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = SCENE_URL;
+    script.onerror = function(error) {
       console.error('Aurix scene failed to load', error);
       window.dispatchEvent(new CustomEvent('aurix:scene-error', { detail: { error: error } }));
-    });
+    };
+    document.head.appendChild(script);
   }
 
   function scheduleScene() {
