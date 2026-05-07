@@ -1,5 +1,7 @@
 <!-- Preconnect to Webflow CDN - saves ~100ms per request -->
 <link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="preconnect" href="https://esm.sh" crossorigin>
 
 <script>
 (function() {
@@ -93,7 +95,21 @@
     return src.indexOf('_poster.') !== -1 || !!img.closest('.w-background-video');
   }
 
+  function prepareImage(img) {
+    if (!img || isHeroMedia(img)) return;
+    if (!img.hasAttribute('loading')) {
+      img.loading = 'lazy';
+    }
+    if (!img.hasAttribute('decoding')) {
+      img.decoding = 'async';
+    }
+    if (!img.hasAttribute('fetchpriority')) {
+      img.setAttribute('fetchpriority', 'low');
+    }
+  }
+
   function stripImage(img) {
+    prepareImage(img);
     if (!shouldStripImage(img) || img.dataset.aurixLazyImage === '1') return false;
     let stripped = false;
     const src = img.getAttribute('src');
@@ -143,9 +159,15 @@
   function scan(root) {
     if (!root || root.nodeType !== 1) return;
     if (root.matches && root.matches('video')) stripVideo(root);
-    if (root.matches && root.matches('img')) stripImage(root);
+    if (root.matches && root.matches('img')) {
+      prepareImage(root);
+      stripImage(root);
+    }
     root.querySelectorAll?.('video').forEach(stripVideo);
-    root.querySelectorAll?.('img').forEach(stripImage);
+    root.querySelectorAll?.('img').forEach(function(img) {
+      prepareImage(img);
+      stripImage(img);
+    });
   }
 
   const observer = new MutationObserver(function(mutations) {

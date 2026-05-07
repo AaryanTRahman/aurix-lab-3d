@@ -211,6 +211,11 @@ html.w-mod-js .hero-content-wrapper .icon-btn-wrapper {
   transition: opacity 0.8s ease-out, visibility 0.8s;
 }
 </style>
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.164.0/build/three.module.min.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/loaders/GLTFLoader.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/libs/meshopt_decoder.module.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.164.0/examples/jsm/loaders/EXRLoader.js">
+<link rel="modulepreload" href="https://esm.sh/postprocessing@6.39.1?external=three">
 <script type="importmap">
 {
   "imports": {
