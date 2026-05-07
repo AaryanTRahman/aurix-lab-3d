@@ -1,6 +1,4 @@
-<!-- GSAP, ScrollTrigger, and Lenis. Swiper is lazy-loaded only when the slider exists. -->
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-<script defer src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<!-- Lenis. GSAP/ScrollTrigger are supplied by Webflow's GSAP integration. Swiper is lazy-loaded only when the slider exists. -->
 <script defer src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 <script>
 
@@ -68,6 +66,26 @@ document.addEventListener('DOMContentLoaded', function() {
       img.loading = 'lazy';
     }
   });
+
+  // Make sure any below-fold videos parsed before the head guard are stripped.
+  if (window.AurixVideoLazy) {
+    document.querySelectorAll('video').forEach(window.AurixVideoLazy.stripVideo);
+  }
+
+  // Restore stripped videos only when the owning section is close to view.
+  if ('IntersectionObserver' in window && window.AurixVideoLazy) {
+    const lazyVideoObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        window.AurixVideoLazy.loadWithin(entry.target);
+        lazyVideoObserver.unobserve(entry.target);
+      });
+    }, { rootMargin: '900px 0px', threshold: 0.01 });
+
+    document.querySelectorAll('.particle-section, .work-meet-combined-section, .tinyflow-slider--main, .contact-section').forEach((section) => {
+      lazyVideoObserver.observe(section);
+    });
+  }
 
   lenis = new Lenis(
     isMobileDevice
@@ -667,6 +685,7 @@ function initParticleSection() {
     if (!video) return;
 
     clearParticleVideoRetry(video);
+    window.AurixVideoLazy?.loadVideo(video);
     video.autoplay = true;
     video.loop = true;
     video.preload = 'auto';
@@ -1329,6 +1348,26 @@ function initTinyflowSlider() {
   function isMobileDevice() {
     return window.innerWidth < 768;
   }
+  function isNearViewport(element, margin) {
+    if (!element) return false;
+    const bounds = element.getBoundingClientRect();
+    const threshold = margin || 900;
+    return bounds.bottom >= -threshold && bounds.top <= window.innerHeight + threshold;
+  }
+  function loadVisibleSliderVideos(swiper) {
+    if (!window.AurixVideoLazy || !swiper || !swiper.el || !isNearViewport(swiper.el, 900)) return;
+    const indexes = new Set([swiper.activeIndex, swiper.activeIndex - 1, swiper.activeIndex + 1]);
+    swiper.slides.forEach(function(slide, index) {
+      if (
+        indexes.has(index) ||
+        slide.classList.contains('swiper-slide-active') ||
+        slide.classList.contains('swiper-slide-prev') ||
+        slide.classList.contains('swiper-slide-next')
+      ) {
+        window.AurixVideoLazy.loadWithin(slide);
+      }
+    });
+  }
   const tinyflowMainSlider = new Swiper(".tinyflow-slider--main", {
     slidesPerView: "auto",
     centeredSlides: true,
@@ -1379,8 +1418,11 @@ function initTinyflowSlider() {
         navButtons.forEach(btn => {
           if (btn) btn.style.display = 'none';
         });
+        loadVisibleSliderVideos(swiper);
       },
+      slideChange: loadVisibleSliderVideos,
       progress(swiper) {
+        loadVisibleSliderVideos(swiper);
         const isMobile = isMobileDevice();
         const translateMultiplier = getTranslateMultiplier();
         swiper.slides.forEach(eachSlideElement => {

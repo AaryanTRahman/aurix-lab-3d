@@ -1,6 +1,103 @@
 <!-- Preconnect to Webflow CDN - saves ~100ms per request -->
 <link rel="preconnect" href="https://cdn.prod.website-files.com" crossorigin>
 
+<script>
+(function() {
+  const HERO_VIDEO_SELECTOR = '.preloader-wrapper video, .hero-section video, .hero-bg-3d-animation video';
+  const LAZY_ATTR = 'data-aurix-src';
+  const lazyVideos = new WeakSet();
+
+  function isHeroVideo(video) {
+    return !!(video && video.closest(HERO_VIDEO_SELECTOR));
+  }
+
+  function stripSource(source) {
+    if (!source || source.dataset.aurixLazySource === '1') return false;
+    const src = source.getAttribute('src');
+    if (!src) return false;
+    source.setAttribute(LAZY_ATTR, src);
+    source.removeAttribute('src');
+    source.dataset.aurixLazySource = '1';
+    return true;
+  }
+
+  function stripVideo(video) {
+    if (!video || isHeroVideo(video)) return false;
+    let stripped = false;
+    if (video.currentSrc && !video.dataset.aurixHadCurrentSrc) {
+      video.dataset.aurixHadCurrentSrc = video.currentSrc;
+    }
+    const directSrc = video.getAttribute('src');
+    if (directSrc) {
+      video.setAttribute(LAZY_ATTR, directSrc);
+      video.removeAttribute('src');
+      stripped = true;
+    }
+    video.querySelectorAll('source[src]').forEach(function(source) {
+      stripped = stripSource(source) || stripped;
+    });
+    if (stripped) {
+      video.preload = 'none';
+      video.autoplay = false;
+      video.removeAttribute('autoplay');
+      try { video.pause(); } catch (error) {}
+      lazyVideos.add(video);
+      video.dataset.aurixLazyVideo = '1';
+    }
+    return stripped;
+  }
+
+  function loadVideo(video) {
+    if (!video) return false;
+    let restored = false;
+    const directSrc = video.getAttribute(LAZY_ATTR);
+    if (directSrc && !video.getAttribute('src')) {
+      video.setAttribute('src', directSrc);
+      restored = true;
+    }
+    video.querySelectorAll('source[' + LAZY_ATTR + ']').forEach(function(source) {
+      if (!source.getAttribute('src')) {
+        source.setAttribute('src', source.getAttribute(LAZY_ATTR));
+        restored = true;
+      }
+    });
+    if (restored && typeof video.load === 'function') {
+      video.load();
+    }
+    return restored;
+  }
+
+  function scan(root) {
+    if (!root || root.nodeType !== 1) return;
+    if (root.matches && root.matches('video')) stripVideo(root);
+    root.querySelectorAll?.('video').forEach(stripVideo);
+  }
+
+  const observer = new MutationObserver(function(mutations) {
+    mutations.forEach(function(mutation) {
+      mutation.addedNodes.forEach(scan);
+    });
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+
+  window.AurixVideoLazy = {
+    stripVideo: stripVideo,
+    loadVideo: loadVideo,
+    loadWithin: function(root) {
+      if (!root) return;
+      if (root.matches && root.matches('video')) loadVideo(root);
+      root.querySelectorAll?.('video').forEach(loadVideo);
+    }
+  };
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() { scan(document.body); });
+  } else {
+    scan(document.body);
+  }
+})();
+</script>
+
 <!-- Keep this css code to improve the font quality-->
 <style>
   /* Override Webflow's font-display to prevent invisible text during load */
