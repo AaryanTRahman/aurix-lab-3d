@@ -1072,6 +1072,26 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
 
       return alignmentX;
     };
+
+    const playMeetVideos = () => {
+      window.AurixVideoLazy?.loadWithin(meetVideoWrapper);
+      meetVideoWrapper.querySelectorAll('video').forEach((video) => {
+        video.muted = true;
+        video.defaultMuted = true;
+        video.playsInline = true;
+        video.autoplay = true;
+        video.setAttribute('muted', '');
+        video.setAttribute('playsinline', '');
+        video.setAttribute('autoplay', '');
+        if (typeof video.load === 'function' && video.readyState < 2) {
+          video.load();
+        }
+        const playPromise = video.play?.();
+        if (playPromise && typeof playPromise.catch === 'function') {
+          playPromise.catch(() => {});
+        }
+      });
+    };
     
 	const combinedTl = gsap.timeline({
       scrollTrigger: {
@@ -1081,7 +1101,9 @@ if (workMeetContainer && workGridSection && meetSection && workGridItems.length 
         pin: true,
         scrub: true,
         id: 'work-meet-combined',
-        invalidateOnRefresh: true
+        invalidateOnRefresh: true,
+        onEnter: playMeetVideos,
+        onEnterBack: playMeetVideos
       }
     });
     combinedTl.to(workGridItems, {
