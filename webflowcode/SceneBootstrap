@@ -1,10 +1,10 @@
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/js/Scene62.js">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/js/Scene63.js">
 <link rel="preload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test20optimized.glb" as="fetch" crossorigin>
 <link rel="preload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.exr" as="fetch" crossorigin>
 <link rel="preload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k_desaturated.exr" as="fetch" crossorigin>
 <script>
 (function() {
-  const SCENE_URL = 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/js/Scene62.js';
+  const SCENE_URL = 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/js/Scene63.js';
   const START_DELAY_MS = 4000;
   let started = false;
 
