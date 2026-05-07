@@ -1,0 +1,36 @@
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/js/Scene62.js">
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test20optimized.glb" as="fetch" crossorigin>
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/LightMapRoom_Small1.exr" as="fetch" crossorigin>
+<link rel="preload" href="https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/shanghai_bund_1k_desaturated.exr" as="fetch" crossorigin>
+<script>
+(function() {
+  const SCENE_URL = 'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/js/Scene62.js';
+  const START_DELAY_MS = 4000;
+  let started = false;
+
+  function startScene() {
+    if (started) return;
+    started = true;
+    import(SCENE_URL).catch(function(error) {
+      console.error('Aurix scene failed to load', error);
+      window.dispatchEvent(new CustomEvent('aurix:scene-error', { detail: { error: error } }));
+    });
+  }
+
+  function scheduleScene() {
+    window.setTimeout(function() {
+      if ('requestIdleCallback' in window) {
+        requestIdleCallback(startScene, { timeout: 1200 });
+      } else {
+        startScene();
+      }
+    }, START_DELAY_MS);
+  }
+
+  if (document.readyState === 'complete') {
+    scheduleScene();
+  } else {
+    window.addEventListener('load', scheduleScene, { once: true });
+  }
+})();
+</script>
