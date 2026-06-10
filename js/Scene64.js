@@ -295,7 +295,7 @@ async function initScene() {
   gltfLoader.setMeshoptDecoder(MeshoptDecoder);
 
   const gltfPromise = gltfLoader.loadAsync(
-    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Test20optimized.glb',
+    'https://cdn.jsdelivr.net/gh/AaryanTRahman/aurix-lab-3d@main/models/Office_ImacOptimized.glb',
     (xhr) => {
       if (xhr.total > 0) {
         window.dispatchEvent(new CustomEvent('aurix:scene-progress', {
